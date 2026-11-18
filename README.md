@@ -31,11 +31,12 @@ Apps that let a model change their interface usually pick one of two paths. JSON
 | Path | What it is |
 | --- | --- |
 | [`crates/ulana`](crates/ulana) | The Rust library: blocks, checker, and the sandboxed Luau runtime (through [mlua](https://github.com/mlua-rs/mlua)). |
-| [`crates/ulana-cli`](crates/ulana-cli) | `ulana render`, `ulana check`, `ulana schema`. |
+| [`crates/ulana-cli`](crates/ulana-cli) | `ulana render`, `ulana check`, `ulana serve` (hot reload over HTTP), `ulana schema`. |
 | [`packages/react-native`](packages/react-native) | `@zobeli/ulana-react-native`: draws a frame with React Native's own components. |
 | [`spec/ulana.md`](spec/ulana.md) | The API, for models and people. |
 | [`spec/frame.schema.json`](spec/frame.schema.json) | JSON Schema of a frame, generated from the Rust types. |
-| [`examples`](examples) | `counter.luau`, `todo.luau`, and `agenda.luau` with `agenda.json`. |
+| [`examples/views`](examples/views) | `counter.luau`, `todo.luau`, and `agenda.luau` with `agenda.json`. |
+| [`examples/expo`](examples/expo) | An Expo app that draws whatever `ulana serve` runs, on iOS, Android, and the web. |
 
 ## How it fits together
 
@@ -84,17 +85,35 @@ import { UlanaView, makeTheme } from "@zobeli/ulana-react-native";
 
 ## Try it
 
+Hot reload on a phone or in a browser: run every view in a folder, and save a file to see the app change without losing its state.
+
+```sh
+bun install
+cargo run -p ulana-cli -- serve examples/views --block calendar --action send
+# in another terminal
+cd examples/expo && bun run web      # or: bun run ios, bun run android
+```
+
+`ulana serve` reads each `<name>.luau` in the folder, with `<name>.json` as its data when there is one, and reloads a view when either file changes. A script with an error keeps its last good frame on screen, with the error above it. For a phone on the same network, serve with `--bind 0.0.0.0:8790` and start the app with `EXPO_PUBLIC_ULANA_URL=http://<this machine's address>:8790`.
+
+From the command line:
+
+```sh
+cargo run -p ulana-cli -- render examples/views/counter.luau --event h2 --event h2
+cargo run -p ulana-cli -- render examples/views/agenda.luau --data examples/views/agenda.json --block calendar --action send
+```
+
+Checks:
+
 ```sh
 cargo test --workspace
-cargo run -p ulana-cli -- render examples/counter.luau --event h2 --event h2
-cargo run -p ulana-cli -- render examples/agenda.luau --data examples/agenda.json --block calendar --action send
-cd packages/react-native && bun install && bun run typecheck && bun test
+cd packages/react-native && bun run typecheck && bun test
+cd examples/expo && bun run typecheck
 ```
 
 ## Not yet
 
 - The runtime on iOS, Android, and the web (WebAssembly).
-- An example Expo app with hot reload from `ulana serve`.
 - Text fields, images, and charts.
 - Publishing to crates.io and npm.
 

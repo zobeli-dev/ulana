@@ -12,8 +12,12 @@ Luau scripts that draw native UI. Read [README.md](README.md) for what it is and
 | `crates/ulana/src/prelude.luau` | The `ui` library, loaded before the sandbox turns on. |
 | `crates/ulana/src/convert.rs` | Luau values to JSON and back, with the checks a script cannot skip. |
 | `crates/ulana/tests/sandbox.rs` | Tests that try to get out of the sandbox. |
-| `crates/ulana-cli` | The `ulana` binary. |
+| `crates/ulana-cli/src/main.rs` | The `ulana` binary: `render`, `check`, `serve`, `schema`. |
+| `crates/ulana-cli/src/serve.rs` | `ulana serve`: one thread owns every view, rescans the folder every 250 ms, and answers long polls when a view's revision moves. |
 | `packages/react-native` | The renderer. `src/types.ts` mirrors `block.rs` by hand; `test/sync.test.ts` fails when they drift. |
+| `packages/react-native/test/render.test.tsx` | Draws every block through react-native-web (`test/setup.ts` swaps the module), no device needed. |
+| `examples/views` | Views `ulana serve examples/views` runs. |
+| `examples/expo` | The example app. A Bun workspace with `packages/*`, so there is one copy of React; install from the root. |
 | `spec/frame.schema.json` | Generated. `ULANA_BLESS=1 cargo test -p ulana --test schema` rewrites it. |
 
 ## Rules
@@ -29,7 +33,9 @@ Luau scripts that draw native UI. Read [README.md](README.md) for what it is and
 cargo fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
-cd packages/react-native && bun install && bun run typecheck && bun test
+bun install
+(cd packages/react-native && bun run typecheck && bun test)
+(cd examples/expo && bun run typecheck && CI=1 bunx expo export --platform ios --platform web --output-dir /tmp/ulana-export)
 ```
 
 Commits are conventional commits (`feat:`, `fix:`, `docs:`, `chore:`). One branch, one change.

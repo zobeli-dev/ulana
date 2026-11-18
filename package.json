@@ -1,0 +1,5 @@
+{
+  "name": "ulana-workspace",
+  "private": true,
+  "workspaces": ["packages/*", "examples/expo"]
+}

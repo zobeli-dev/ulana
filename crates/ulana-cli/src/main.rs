@@ -1,4 +1,6 @@
-//! `ulana`: render a view or check a tree from the command line.
+//! `ulana`: render a view, check a tree, or serve a folder of views.
+
+mod serve;
 
 use std::process::ExitCode;
 
@@ -8,11 +10,19 @@ const USAGE: &str = "\
 usage:
   ulana render <view.luau> [--data <file.json>] [--event <id>[=<json>]]... [options]
   ulana check <tree.json> [options]
+  ulana serve <folder> [--bind <address>] [options]
   ulana schema
 
 render  runs a view, applies each --event in order (rendering before each),
         and prints the last frame as JSON.
 check   reads a tree written as JSON and prints it checked.
+serve   runs every <name>.luau in the folder (with <name>.json as its data
+        when there is one), reloads a view when either file changes, and
+        serves frames over HTTP for an app to draw:
+          GET  /views                      the views and their revisions
+          GET  /views/<name>?since=<rev>   the view, after it changes
+          POST /views/<name>/events        { version, id, value }
+        --bind defaults to 127.0.0.1:8790; use 0.0.0.0:8790 for a phone.
 schema  prints the JSON Schema of a frame.
 
 options:
@@ -39,6 +49,7 @@ fn run(args: &[String]) -> Result<String, String> {
     let mut data = serde_json::Value::Null;
     let mut events = Vec::new();
     let mut host = Host::new();
+    let mut bind = "127.0.0.1:8790".to_string();
     let mut it = rest.iter();
     while let Some(arg) = it.next() {
         let mut value = || {
@@ -51,6 +62,7 @@ fn run(args: &[String]) -> Result<String, String> {
             "--action" => host = host.action(value()?),
             "--data" => data = json_file(&value()?)?,
             "--event" => events.push(value()?),
+            "--bind" => bind = value()?,
             "-h" | "--help" => return Err(USAGE.into()),
             _ if file.is_none() && !arg.starts_with('-') => file = Some(arg.clone()),
             _ => return Err(format!("unexpected `{arg}`\n\n{USAGE}")),
@@ -58,6 +70,14 @@ fn run(args: &[String]) -> Result<String, String> {
     }
     match command.as_str() {
         "schema" => Ok(pretty(&ulana::frame_schema())),
+        "serve" => {
+            let dir = std::path::PathBuf::from(file.ok_or(USAGE)?);
+            if !dir.is_dir() {
+                return Err(format!("{} is not a folder", dir.display()));
+            }
+            serve::serve(serve::Options { dir, bind, host })?;
+            Ok(String::new())
+        }
         "check" => {
             let tree = json_file(&file.ok_or(USAGE)?)?;
             let block = ulana::parse(tree, &host, &Limits::default()).map_err(|e| e.to_string())?;

@@ -11,7 +11,9 @@
   "main": "src/index.ts",
   "types": "src/index.ts",
   "react-native": "src/index.ts",
-  "files": ["src"],
+  "files": [
+    "src"
+  ],
   "sideEffects": false,
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -22,10 +24,13 @@
     "react-native": ">=0.80"
   },
   "devDependencies": {
-    "@types/bun": "^1.4.4",
+    "@types/bun": "^1.2.0",
     "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
     "react": "19.2.3",
+    "react-dom": "19.2.3",
     "react-native": "0.86.3",
+    "react-native-web": "^0.21.2",
     "typescript": "~6.0.3"
   }
 }

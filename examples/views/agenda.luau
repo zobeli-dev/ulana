@@ -1,6 +1,6 @@
 -- Today's agenda from data the host passes, a host-provided calendar block,
 -- and a button that asks the host to send a message.
--- Run: ulana render examples/agenda.luau --data examples/agenda.json --block calendar --action send
+-- Run: ulana render examples/views/agenda.luau --data examples/views/agenda.json --block calendar --action send
 return function(data)
 	local compact = ui.state("compact", false)
 
