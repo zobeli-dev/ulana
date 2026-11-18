@@ -4,10 +4,9 @@
 
 ## Install
 
-The package is not on npm yet. Until it is, add it from a clone:
-
-- **Copy it.** Copy [`packages/react-native`](../packages/react-native) into your repository, for example as `packages/ulana-react-native`, and depend on it with `"@zobeli/ulana-react-native": "workspace:*"` (Bun, pnpm, or Yarn workspaces) or `"file:./packages/ulana-react-native"` (npm).
-- **Or point at a clone.** `bun add ../ulana/packages/react-native`.
+```sh
+npm install @zobeli/ulana-react-native     # or: bun add, yarn add, npx expo install
+```
 
 It ships TypeScript source, which Metro compiles. Its peer dependencies are `react` 19 and `react-native` 0.80 or later. It has no other dependencies.
 

@@ -28,7 +28,7 @@ What a view renders, and what an app draws:
 `ulana serve <folder>` runs every `<name>.luau` in the folder, with `<name>.json` as its data when there is one. It reloads a view when either file changes, keeping its state.
 
 ```sh
-cargo install --git https://github.com/zobeli-dev/ulana ulana-cli
+cargo install ulana-cli
 ulana serve views --block calendar --action send --image https://images.example.com/
 ```
 
