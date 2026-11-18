@@ -3,7 +3,7 @@
 The `ulana` crate runs views: it loads a Luau script in a sandbox, renders it into a checked `Frame`, runs the handlers a press names, and keeps the view's state as JSON. Use it when views should run on your server, so you can change screens without an app update, and send the frames to an app that draws them ([SwiftUI](swift.md), [React Native](react-native.md)).
 
 ```sh
-cargo add ulana --git https://github.com/zobeli-dev/ulana
+cargo add ulana
 cargo add serde_json
 ```
 

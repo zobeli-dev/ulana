@@ -9,11 +9,11 @@ Draw Ulana views with SwiftUI's own views, from a server or from the device itse
 
 ## Install
 
-**Views on a server.** In Xcode, choose **File › Add Package Dependencies…**, enter `https://github.com/zobeli-dev/ulana`, and add the `Ulana` library to your app. In a `Package.swift`:
+**Views on a server.** In Xcode, choose **File › Add Package Dependencies…**, enter `https://github.com/zobeli-dev/ulana` (rule: *Up to Next Major Version* from `0.1.0`), and add the `Ulana` library to your app. In a `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/zobeli-dev/ulana", branch: "main"),
+    .package(url: "https://github.com/zobeli-dev/ulana", from: "0.1.0"),
 ],
 targets: [
     .target(name: "MyApp", dependencies: [.product(name: "Ulana", package: "ulana")]),

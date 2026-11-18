@@ -14,7 +14,7 @@ return function(data)
 end
 ```
 
-Status: **0.1, early.** The API may still change. MIT licensed.
+Status: **0.1, early.** The API may still change. MIT licensed. Published as [`ulana`](https://crates.io/crates/ulana) and [`ulana-cli`](https://crates.io/crates/ulana-cli) on crates.io, [`@zobeli/ulana-react-native`](https://www.npmjs.com/package/@zobeli/ulana-react-native) on npm, and the `Ulana` Swift package from this repository's tags.
 
 ## Why Ulana
 
@@ -58,7 +58,7 @@ Pick where views run, then the platform.
 In Xcode, choose **File › Add Package Dependencies…** and enter `https://github.com/zobeli-dev/ulana`, or in `Package.swift`:
 
 ```swift
-.package(url: "https://github.com/zobeli-dev/ulana", branch: "main")
+.package(url: "https://github.com/zobeli-dev/ulana", from: "0.1.0")
 ```
 
 ```swift
@@ -79,7 +79,9 @@ Guide: [docs/swift.md](docs/swift.md), which also covers running views on the de
 
 ### React Native and Expo
 
-The package is not on npm yet: copy [`packages/react-native`](packages/react-native) into your repository (or add it as a workspace) until it is.
+```sh
+npm install @zobeli/ulana-react-native     # or: bun add, yarn add, npx expo install
+```
 
 ```tsx
 import { UlanaServerView } from "@zobeli/ulana-react-native";
@@ -94,7 +96,7 @@ Guide: [docs/react-native.md](docs/react-native.md): your theme, your own blocks
 ### Your server (Rust)
 
 ```sh
-cargo add ulana --git https://github.com/zobeli-dev/ulana
+cargo add ulana
 ```
 
 ```rust
@@ -108,7 +110,7 @@ let next = view.render(&data)?;
 let saved = view.state();                                       // plain JSON, for View::with_state later
 ```
 
-Guide: [docs/rust.md](docs/rust.md). Or skip the code and run `ulana serve` (`cargo install --git https://github.com/zobeli-dev/ulana ulana-cli`), which serves a folder of views over HTTP: [docs/protocol.md](docs/protocol.md).
+Guide: [docs/rust.md](docs/rust.md). Or skip the code and run `ulana serve` (`cargo install ulana-cli`), which serves a folder of views over HTTP: [docs/protocol.md](docs/protocol.md).
 
 ### Let a model write views
 
@@ -156,7 +158,7 @@ Give the model [`spec/ulana.md`](spec/ulana.md), the current script, the data it
 
 ## Not yet
 
-- Publishing to npm, crates.io, and a prebuilt `UlanaCore.xcframework` with each release (until then `UlanaLocal` needs a clone and `scripts/build-xcframework.sh`).
+- A prebuilt `UlanaCore.xcframework` with each release, so `UlanaLocal` installs by URL (until then it needs a clone and `scripts/build-xcframework.sh`).
 - Running views on the device on Android and on the web (WebAssembly).
 - A stable identity per block, so changes can animate; navigation between screens.
 

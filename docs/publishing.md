@@ -62,6 +62,8 @@ Apps can then use `.package(url: "https://github.com/zobeli-dev/ulana", from: "0
 
 `UlanaLocal` still needs a clone and `scripts/build-xcframework.sh`. To install it by URL too, a release would attach `UlanaCore.xcframework.zip`, and the root `Package.swift` would point a `binaryTarget(url:checksum:)` at it.
 
-## After the first release
+npm publishes in stages: `npm publish` uploads the version for review, and it goes live once you approve it with two-factor, in the package's **Staged Packages** tab on npmjs.com or with `npm stage approve <stage-id>` (npm 11.15 or later). The first time, npm shows a placeholder version, `0.0.0-stage`, until then.
 
-Change the install lines in `README.md`, `docs/react-native.md`, `docs/rust.md`, and `docs/protocol.md` from the git forms (`cargo add ulana --git …`, copying the React Native package, `cargo install --git …`, `branch: "main"`) to the registry forms: `cargo add ulana`, `npm install @zobeli/ulana-react-native`, `cargo install ulana-cli`, and `from: "0.1.0"`.
+## After a release
+
+Check that each one installs from a fresh project: `cargo add ulana`, `cargo install ulana-cli`, `npm install @zobeli/ulana-react-native`, and a Swift package with `.package(url: "https://github.com/zobeli-dev/ulana", from: "<version>")`. When the minimum version changes, update the `from:` lines in `README.md` and `docs/swift.md`.
