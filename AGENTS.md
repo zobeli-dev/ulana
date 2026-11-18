@@ -1,6 +1,6 @@
 # Ulana
 
-Luau scripts that draw native UI. Read [README.md](README.md) for what it is and [spec/ulana.md](spec/ulana.md) for the API a view sees.
+Luau scripts that draw native UI. Read [README.md](README.md) for what it is, [spec/ulana.md](spec/ulana.md) for the API a view sees, and [docs/](docs) for the guide to each platform (Swift, React Native, Rust, models, protocol). Keep the docs in step with the code in the same change.
 
 ## Layout
 
@@ -14,9 +14,10 @@ Luau scripts that draw native UI. Read [README.md](README.md) for what it is and
 | `crates/ulana/tests/sandbox.rs` | Tests that try to get out of the sandbox. |
 | `crates/ulana-cli/src/main.rs` | The `ulana` binary: `render`, `check`, `serve`, `schema`. |
 | `crates/ulana-cli/src/serve.rs` | `ulana serve`: one thread owns every view, rescans the folder every 250 ms, and answers long polls when a view's revision moves. |
-| `packages/react-native` | The renderer. `src/types.ts` mirrors `block.rs` by hand; `test/sync.test.ts` fails when they drift. |
-| `crates/ulana-ffi` | The C interface (`include/ulana.h`): JSON in, `{"ok"}` or `{"error"}` out, panics caught. `scripts/build-xcframework.sh` builds it for iPhone, the simulator, and macOS into `packages/swift/UlanaCore.xcframework` (not committed). |
-| `packages/swift` | Swift package. `Ulana`: `Frame.swift` mirrors `block.rs` by hand, `UlanaView.swift` draws with SwiftUI, `Session.swift` has `ServerSession`. `UlanaLocal`: `LocalView` over the C interface, `LocalSession` for SwiftUI. `Package.swift` leaves `UlanaLocal` out when the XCFramework is missing. `Tests/UlanaTests/SchemaTests.swift` fails when the Swift types drift from the schema. |
+| `packages/react-native` | The renderer. `src/types.ts` mirrors `block.rs` by hand; `test/sync.test.ts` fails when they drift. `src/server.tsx` has `useServerView`, `useServerViews`, and `UlanaServerView`, which speak the `ulana serve` protocol. |
+| `crates/ulana-ffi` | The C interface (`include/ulana.h`): JSON in, `{"ok"}` or `{"error"}` out, panics caught. `scripts/build-xcframework.sh` builds it for iPhone, the simulator, and macOS into `packages/swift-local/UlanaCore.xcframework` (not committed). |
+| `Package.swift`, `packages/swift` | The `Ulana` Swift package, at the repository root so SwiftPM can add it by URL. `Frame.swift` mirrors `block.rs` by hand, `UlanaView.swift` draws with SwiftUI, `Session.swift` has `ServerSession`, `UlanaSessionView.swift` draws any session. `Tests/UlanaTests/SchemaTests.swift` fails when the Swift types drift from the schema. |
+| `packages/swift-local` | The `UlanaLocal` Swift package: `LocalView` over the C interface and `LocalSession`. It depends on the root package by path and on `UlanaCore.xcframework` (built, not committed). It is a separate package so `Ulana` never depends on a file that may be missing. |
 | `examples/ios` | SwiftUI example app, generated with XcodeGen from `project.yml` (the `.xcodeproj` is not committed). |
 | `packages/react-native/test/render.test.tsx` | Draws every block through react-native-web (`test/setup.ts` swaps the module), no device needed. |
 | `examples/views` | Views `ulana serve examples/views` runs. |
@@ -38,7 +39,8 @@ Luau scripts that draw native UI. Read [README.md](README.md) for what it is and
 cargo fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
-scripts/build-xcframework.sh && (cd packages/swift && swift test)
+swift test
+scripts/build-xcframework.sh && (cd packages/swift-local && swift test)
 (cd examples/ios && xcodegen && xcodebuild -project UlanaExample.xcodeproj -scheme UlanaExample -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build)
 bun install
 (cd packages/react-native && bun run typecheck && bun test)

@@ -5,7 +5,9 @@
 // and the whole new script. The script goes to `ulana serve`, which loads it
 // at once; when it fails, the error goes back to the model to fix.
 
-import { getSource, putSource, type HostInfo, type Snapshot } from "./server";
+import type { Snapshot } from "@zobeli/ulana-react-native";
+
+import { getSource, putSource, type HostInfo } from "./server";
 
 export const MODEL = process.env.EXPO_PUBLIC_ULANA_MODEL || "z-ai/glm-5.3-flash";
 

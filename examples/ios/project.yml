@@ -1,6 +1,6 @@
 # The example app. Generate the Xcode project with XcodeGen:
 #   brew install xcodegen
-#   scripts/build-xcframework.sh     # the runtime for "On this iPhone"
+#   scripts/build-xcframework.sh     # the runtime for "On this iPhone" (packages/swift-local)
 #   cd examples/ios && xcodegen && open UlanaExample.xcodeproj
 name: UlanaExample
 options:
@@ -9,7 +9,9 @@ options:
     iOS: "17.0"
 packages:
   Ulana:
-    path: ../../packages/swift
+    path: ../..
+  UlanaLocal:
+    path: ../../packages/swift-local
 targets:
   UlanaExample:
     type: application
@@ -23,7 +25,7 @@ targets:
     dependencies:
       - package: Ulana
         product: Ulana
-      - package: Ulana
+      - package: UlanaLocal
         product: UlanaLocal
     info:
       path: Info.plist

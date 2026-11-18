@@ -12,7 +12,8 @@
   "types": "src/index.ts",
   "react-native": "src/index.ts",
   "files": [
-    "src"
+    "src",
+    "README.md"
   ],
   "sideEffects": false,
   "scripts": {
@@ -32,5 +33,17 @@
     "react-native": "0.86.3",
     "react-native-web": "^0.21.2",
     "typescript": "~6.0.3"
+  },
+  "keywords": [
+    "ulana",
+    "luau",
+    "react-native",
+    "expo",
+    "generative-ui",
+    "server-driven-ui"
+  ],
+  "homepage": "https://github.com/zobeli-dev/ulana/blob/main/docs/react-native.md",
+  "publishConfig": {
+    "access": "public"
   }
 }

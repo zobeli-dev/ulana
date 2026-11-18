@@ -14,19 +14,11 @@ struct SessionView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
-                if let error = session.error {
-                    Banner(title: "The view has an error", text: error, tint: .red)
-                }
-                if let frame = session.frame {
-                    UlanaView(
-                        frame: frame,
-                        onEvent: { version, id, value in session.send(version: version, id: id, value: value) },
-                        onHostAction: { name, value in show("\(name): \(value.display)") },
-                        blocks: ["calendar": { props in AnyView(CalendarStandIn(props: props)) }]
-                    )
-                } else if session.error == nil {
-                    ProgressView().frame(maxWidth: .infinity)
-                }
+                UlanaSessionView(
+                    session: session,
+                    onHostAction: { name, value in show("\(name): \(value.display)") },
+                    blocks: ["calendar": { props in AnyView(CalendarStandIn(props: props)) }]
+                )
                 if !session.logs.isEmpty {
                     DisclosureGroup("Print output (\(session.logs.count))", isExpanded: $showLogs) {
                         Text(session.logs.joined(separator: "\n"))

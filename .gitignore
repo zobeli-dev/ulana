@@ -6,9 +6,11 @@ dist/
 .env
 
 # Built by scripts/build-xcframework.sh
-packages/swift/UlanaCore.xcframework/
-packages/swift/.build/
-packages/swift/.swiftpm/
+packages/swift-local/UlanaCore.xcframework/
+.build/
+.swiftpm/
+packages/swift-local/.build/
+packages/swift-local/.swiftpm/
 examples/ios/*.xcodeproj/
 examples/ios/build/
 examples/ios/Info.plist

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Build UlanaCore.xcframework: the Rust runtime (crates/ulana-ffi) as a static
 # library for iPhone, the iOS simulator (Apple silicon and Intel), and macOS,
-# with its C header. The Swift package picks it up for the UlanaLocal
-# product, which runs views on the device.
+# with its C header, into packages/swift-local, where the UlanaLocal package
+# uses it to run views on the device.
 #
 #   scripts/build-xcframework.sh            # release build
 #   scripts/build-xcframework.sh --debug    # faster to build, larger
@@ -34,7 +34,7 @@ rm -rf target/xcframework
 mkdir -p "$headers"
 cp crates/ulana-ffi/include/ulana.h crates/ulana-ffi/include/module.modulemap "$headers/"
 
-out=packages/swift/UlanaCore.xcframework
+out=packages/swift-local/UlanaCore.xcframework
 rm -rf "$out"
 # The simulator slice holds both simulator architectures in one library.
 sim=target/xcframework/ios-simulator

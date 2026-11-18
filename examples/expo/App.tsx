@@ -7,16 +7,16 @@
 //
 // Settings are in .env (see .env.example).
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { UlanaView, defaultTheme, isFrame } from "@zobeli/ulana-react-native";
+import { UlanaView, defaultTheme, useServerView, useServerViews } from "@zobeli/ulana-react-native";
 import type { CustomBlockProps, Json } from "@zobeli/ulana-react-native";
 
 import { Chat } from "./src/Chat";
 import { ionicons } from "./src/icons";
-import { SERVER, getHost, getSnapshot, listViews, putSource, sendEvent, type HostInfo, type Listed, type Snapshot } from "./src/server";
+import { SERVER, getHost, putSource, type HostInfo } from "./src/server";
 
 const theme = defaultTheme;
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -44,15 +44,16 @@ export default function App() {
 function Example() {
   const { width } = useWindowDimensions();
   const wide = width >= 900;
-  const views = useViews();
+  const views = useServerViews(SERVER);
   const host = useHost();
   const [picked, setPicked] = useState<string | null>(null);
   const [chatOpen, setChatOpen] = useState(true);
-  const name = picked && views.list.some((v) => v.name === picked) ? picked : (views.list[0]?.name ?? picked);
-  const live = useSnapshot(name);
+  const name = picked && views.names.includes(picked) ? picked : (views.names[0] ?? picked);
+  const live = useServerView(SERVER, name);
+  const [failed, setFailed] = useState<string | null>(null);
 
   async function newView() {
-    const taken = new Set(views.list.map((v) => v.name));
+    const taken = new Set(views.names);
     let n = 1;
     while (taken.has(`view-${n}`)) n++;
     const fresh = `view-${n}`;
@@ -61,7 +62,7 @@ function Example() {
       views.refresh();
       setPicked(fresh);
     } catch (e) {
-      live.fail(String(e instanceof Error ? e.message : e));
+      setFailed(e instanceof Error ? e.message : String(e));
     }
   }
 
@@ -69,7 +70,7 @@ function Example() {
     <Chat
       view={name}
       host={host}
-      error={live.snapshot?.error ?? null}
+      error={live.error}
       onSnapshot={live.accept}
       style={wide ? styles.side : styles.bottom}
     />
@@ -103,15 +104,15 @@ function Example() {
       ) : null}
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs} style={styles.tabsBar}>
-        {views.list.map((v) => (
+        {views.names.map((v) => (
           <Pressable
-            key={v.name}
+            key={v}
             accessibilityRole="tab"
-            accessibilityState={{ selected: v.name === name }}
-            onPress={() => setPicked(v.name)}
-            style={[styles.tab, v.name === name && styles.tabOn]}
+            accessibilityState={{ selected: v === name }}
+            onPress={() => setPicked(v)}
+            style={[styles.tab, v === name && styles.tabOn]}
           >
-            <Text style={[styles.tabText, v.name === name && styles.tabTextOn]}>{v.name}</Text>
+            <Text style={[styles.tabText, v === name && styles.tabTextOn]}>{v}</Text>
           </Pressable>
         ))}
         {host?.edit ? (
@@ -122,18 +123,19 @@ function Example() {
       </ScrollView>
 
       <View style={[styles.main, wide && { flexDirection: "row" }]}>
-        <Live live={live} />
+        <Live live={live} failed={failed} />
         {wide || chatOpen ? chat : null}
       </View>
     </View>
   );
 }
 
-type LiveState = ReturnType<typeof useSnapshot>;
+type LiveState = ReturnType<typeof useServerView>;
 
 /** Draws the picked view. */
-function Live({ live }: { live: LiveState }) {
-  const { snapshot, offline, send } = live;
+function Live({ live, failed }: { live: LiveState; failed: string | null }) {
+  const { snapshot, send } = live;
+  const offline = live.offline ?? failed;
   const [said, setSaid] = useState<string | null>(null);
 
   useEffect(() => {
@@ -174,34 +176,6 @@ function Live({ live }: { live: LiveState }) {
   );
 }
 
-/** The list of views, read again every few seconds so new files show up. */
-function useViews() {
-  const [list, setList] = useState<Listed[]>([]);
-  const [offline, setOffline] = useState<string | null>(null);
-  const [tick, setTick] = useState(0);
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      while (alive) {
-        try {
-          const views = await listViews();
-          if (alive) {
-            setList(views);
-            setOffline(null);
-          }
-        } catch (e) {
-          if (alive) setOffline(String(e));
-        }
-        await sleep(2000);
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [tick]);
-  return { list, offline, refresh: () => setTick((t) => t + 1) };
-}
-
 /** What the server says about itself: the view API and what it accepts. */
 function useHost() {
   const [host, setHost] = useState<HostInfo | null>(null);
@@ -223,61 +197,6 @@ function useHost() {
     };
   }, []);
   return host;
-}
-
-/**
- * The latest snapshot of one view. A request waits on the server until the
- * view changes, so a saved file shows up at once.
- */
-function useSnapshot(name: string | null) {
-  const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
-  const [offline, setOffline] = useState<string | null>(null);
-  const latest = useRef(-1);
-  const current = useRef(name);
-  current.current = name;
-
-  const accept = useCallback((s: Snapshot) => {
-    if (s.name !== current.current || s.revision < latest.current) return;
-    if (s.frame !== null && !isFrame(s.frame)) return;
-    latest.current = s.revision;
-    setSnapshot(s);
-  }, []);
-
-  useEffect(() => {
-    latest.current = -1;
-    setSnapshot(null);
-    if (!name) return;
-    let alive = true;
-    const abort = new AbortController();
-    (async () => {
-      while (alive) {
-        try {
-          accept(await getSnapshot(name, latest.current, abort.signal));
-          setOffline(null);
-        } catch (e) {
-          if (!alive) return;
-          setOffline(String(e));
-          await sleep(1000);
-        }
-      }
-    })();
-    return () => {
-      alive = false;
-      abort.abort();
-    };
-  }, [name, accept]);
-
-  const send = useCallback(
-    (version: number, id: string, value: Json) => {
-      if (!name) return;
-      sendEvent(name, version, id, value)
-        .then(accept)
-        .catch((e: unknown) => setOffline(String(e)));
-    },
-    [name, accept],
-  );
-
-  return { snapshot, offline, send, accept, fail: setOffline };
 }
 
 /** Stands in for the app's own calendar, to show a `custom` block. */
