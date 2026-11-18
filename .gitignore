@@ -3,6 +3,7 @@ node_modules/
 .DS_Store
 .expo/
 dist/
+.env
 
 # Built by scripts/build-xcframework.sh
 packages/swift/UlanaCore.xcframework/

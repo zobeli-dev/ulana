@@ -8,11 +8,13 @@
     "ios": "expo start --ios",
     "android": "expo start --android",
     "web": "expo start --web",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
   },
   "dependencies": {
     "@zobeli/ulana-react-native": "workspace:*",
     "expo": "~57.0.29",
+    "expo-secure-store": "~57.0.4",
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -21,6 +23,7 @@
     "react-native-web": "^0.21.2"
   },
   "devDependencies": {
+    "@types/bun": "^1.2.0",
     "@types/react": "^19.2.0",
     "typescript": "~6.0.3"
   }

@@ -21,6 +21,8 @@ Luau scripts that draw native UI. Read [README.md](README.md) for what it is and
 | `packages/react-native/test/render.test.tsx` | Draws every block through react-native-web (`test/setup.ts` swaps the module), no device needed. |
 | `examples/views` | Views `ulana serve examples/views` runs. |
 | `examples/expo` | The example app. A Bun workspace with `packages/*`, so there is one copy of React; install from the root. |
+| `examples/expo/src/ai.ts` | Asks the OpenRouter model for a new script (`changeView`): the prompt, the answer split into a sentence and a script, and the repair loop. `test/change.test.ts` covers it with a fake `fetch`; `test/e2e.live.ts` is a real run, not part of `bun test`. |
+| `examples/expo/src/Chat.tsx` | The chat panel: connect a key (`keyStore.ts`), ask, undo. |
 | `spec/frame.schema.json` | Generated. `ULANA_BLESS=1 cargo test -p ulana --test schema` rewrites it. |
 
 ## Rules
@@ -40,7 +42,7 @@ scripts/build-xcframework.sh && (cd packages/swift && swift test)
 (cd examples/ios && xcodegen && xcodebuild -project UlanaExample.xcodeproj -scheme UlanaExample -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build)
 bun install
 (cd packages/react-native && bun run typecheck && bun test)
-(cd examples/expo && bun run typecheck && CI=1 bunx expo export --platform ios --platform web --output-dir /tmp/ulana-export)
+(cd examples/expo && bun run typecheck && bun test && CI=1 bunx expo export --platform ios --platform web --output-dir /tmp/ulana-export)
 ```
 
 Commits are conventional commits (`feat:`, `fix:`, `docs:`, `chore:`). One branch, one change.

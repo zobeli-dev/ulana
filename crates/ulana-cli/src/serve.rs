@@ -4,6 +4,10 @@
 //! One thread owns every view (a [`View`] is not `Send`). Requests that wait
 //! for a change (long polling) are parked and answered when the view's
 //! revision moves, or after [`WAIT`].
+//!
+//! With `--edit`, a client may also write a view's script
+//! (`PUT /views/<name>/source`), which is how an app lets a model change
+//! its own interface. Without it the folder is read-only.
 
 use std::collections::BTreeMap;
 use std::io::Read;
@@ -22,11 +26,17 @@ const SCAN: Duration = Duration::from_millis(250);
 const LOG_LINES: usize = 50;
 /// The largest event body read.
 const BODY_LIMIT: u64 = 64 * 1024;
+/// The largest script a client may write.
+const SOURCE_LIMIT: u64 = 256 * 1024;
+/// The API a view sees, for clients that ask a model to write one.
+const SPEC: &str = include_str!("../../../spec/ulana.md");
 
 pub struct Options {
     pub dir: PathBuf,
     pub bind: String,
     pub host: Host,
+    /// Let clients write scripts.
+    pub edit: bool,
 }
 
 /// What an app gets for one view.
@@ -46,6 +56,27 @@ struct Snapshot<'a> {
 struct Listed<'a> {
     name: &'a str,
     revision: u64,
+}
+
+/// What a client needs to ask a model for a view.
+#[derive(Serialize)]
+struct HostInfo<'a> {
+    spec: &'a str,
+    blocks: Vec<&'a str>,
+    actions: Vec<&'a str>,
+    edit: bool,
+}
+
+#[derive(Serialize)]
+struct Source<'a> {
+    name: &'a str,
+    source: String,
+    data: &'a serde_json::Value,
+}
+
+#[derive(Deserialize)]
+struct NewSource {
+    source: String,
 }
 
 #[derive(Deserialize)]
@@ -80,15 +111,21 @@ pub fn serve(options: Options) -> Result<(), String> {
     let mut state = Served {
         dir: options.dir,
         host: options.host,
+        edit: options.edit,
         entries: BTreeMap::new(),
         waiting: Vec::new(),
     };
     state.scan();
     let names: Vec<_> = state.entries.keys().cloned().collect();
     eprintln!(
-        "ulana: serving {} on http://{} ({})",
+        "ulana: serving {} on http://{}{} ({})",
         state.dir.display(),
         options.bind,
+        if state.edit {
+            ", clients may write scripts"
+        } else {
+            ""
+        },
         if names.is_empty() {
             "no views yet".to_string()
         } else {
@@ -113,8 +150,25 @@ pub fn serve(options: Options) -> Result<(), String> {
 struct Served {
     dir: PathBuf,
     host: Host,
+    edit: bool,
     entries: BTreeMap<String, Entry>,
     waiting: Vec<Waiter>,
+}
+
+impl Entry {
+    fn new(script: PathBuf) -> Self {
+        Entry {
+            data_file: script.with_extension("json"),
+            script,
+            stamp: (None, None),
+            view: None,
+            data: serde_json::Value::Null,
+            revision: 0,
+            frame: None,
+            error: None,
+            logs: Vec::new(),
+        }
+    }
 }
 
 impl Served {
@@ -136,19 +190,11 @@ impl Served {
         self.entries
             .retain(|name, _| found.iter().any(|(n, _)| n == name));
         for (name, script) in found {
-            let data_file = script.with_extension("json");
-            let stamp = (modified(&script), modified(&data_file));
-            let entry = self.entries.entry(name.clone()).or_insert_with(|| Entry {
-                script,
-                data_file,
-                stamp: (None, None),
-                view: None,
-                data: serde_json::Value::Null,
-                revision: 0,
-                frame: None,
-                error: None,
-                logs: Vec::new(),
-            });
+            let stamp = (modified(&script), modified(&script.with_extension("json")));
+            let entry = self
+                .entries
+                .entry(name.clone())
+                .or_insert_with(|| Entry::new(script));
             if entry.stamp != stamp {
                 let script_changed = entry.stamp.0 != stamp.0;
                 entry.stamp = stamp;
@@ -165,6 +211,52 @@ impl Served {
         let (path, query) = url.split_once('?').unwrap_or((&url, ""));
         let parts: Vec<&str> = path.trim_matches('/').split('/').collect();
         match (request.method(), parts.as_slice()) {
+            (Method::Get, ["host"]) => {
+                let info = HostInfo {
+                    spec: SPEC,
+                    blocks: self.host.blocks().collect(),
+                    actions: self.host.actions().collect(),
+                    edit: self.edit,
+                };
+                respond(request, 200, Some(json(&info)));
+            }
+            (Method::Get, ["views", name, "source"]) => {
+                let Some(entry) = self.entries.get(*name) else {
+                    return respond(request, 404, Some(message("no such view")));
+                };
+                match std::fs::read_to_string(&entry.script) {
+                    Ok(source) => {
+                        let body = json(&Source {
+                            name,
+                            source,
+                            data: &entry.data,
+                        });
+                        respond(request, 200, Some(body));
+                    }
+                    Err(e) => respond(request, 500, Some(message(&e.to_string()))),
+                }
+            }
+            (Method::Put, ["views", name, "source"]) => {
+                let name = name.to_string();
+                if !self.edit {
+                    let text =
+                        "this server does not let clients write scripts; start it with --edit";
+                    return respond(request, 403, Some(message(text)));
+                }
+                if !valid_name(&name) {
+                    let text = "a view's name is 1 to 64 letters, digits, '-', or '_'";
+                    return respond(request, 400, Some(message(text)));
+                }
+                let new: NewSource = match read_json(&mut request, SOURCE_LIMIT) {
+                    Ok(new) => new,
+                    Err(e) => return respond(request, 400, Some(message(&e))),
+                };
+                let body = match self.write(&name, &new.source) {
+                    Ok(body) => body,
+                    Err(e) => return respond(request, 500, Some(message(&e))),
+                };
+                respond(request, 200, Some(body));
+            }
             (Method::Get, ["views"]) => {
                 let list: Vec<_> = self
                     .entries
@@ -199,15 +291,7 @@ impl Served {
             }
             (Method::Post, ["views", name, "events"]) => {
                 let name = name.to_string();
-                let mut body = String::new();
-                let read = request
-                    .as_reader()
-                    .take(BODY_LIMIT)
-                    .read_to_string(&mut body);
-                let event: Event = match read
-                    .map_err(|e| e.to_string())
-                    .and_then(|_| serde_json::from_str(&body).map_err(|e| e.to_string()))
-                {
+                let event: Event = match read_json(&mut request, BODY_LIMIT) {
                     Ok(event) => event,
                     Err(e) => return respond(request, 400, Some(message(&e))),
                 };
@@ -220,6 +304,21 @@ impl Served {
             }
             _ => respond(request, 404, Some(message("not found"))),
         }
+    }
+
+    /// Write a view's script, load it at once, and return its snapshot as JSON.
+    fn write(&mut self, name: &str, source: &str) -> Result<String, String> {
+        let script = self.dir.join(format!("{name}.luau"));
+        std::fs::write(&script, source).map_err(|e| format!("{}: {e}", script.display()))?;
+        let entry = self
+            .entries
+            .entry(name.to_string())
+            .or_insert_with(|| Entry::new(script.clone()));
+        // Load now rather than on the next scan, so the answer has the result
+        // even when the file's time did not move.
+        entry.stamp = (modified(&script), modified(&entry.data_file));
+        entry.refresh(name, &self.host, true);
+        Ok(json(&entry.snapshot(name)))
     }
 
     fn answer_waiting(&mut self) {
@@ -338,6 +437,23 @@ fn valid_name(name: &str) -> bool {
             .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
 }
 
+/// Read a JSON body of at most `limit` bytes.
+fn read_json<T: serde::de::DeserializeOwned>(
+    request: &mut Request,
+    limit: u64,
+) -> Result<T, String> {
+    let mut body = String::new();
+    request
+        .as_reader()
+        .take(limit + 1)
+        .read_to_string(&mut body)
+        .map_err(|e| e.to_string())?;
+    if body.len() as u64 > limit {
+        return Err(format!("the body is over {limit} bytes"));
+    }
+    serde_json::from_str(&body).map_err(|e| e.to_string())
+}
+
 fn modified(path: &Path) -> Option<SystemTime> {
     std::fs::metadata(path).and_then(|m| m.modified()).ok()
 }
@@ -356,7 +472,7 @@ fn respond(request: Request, status: u16, body: Option<String>) {
     for (k, v) in [
         ("Content-Type", "application/json"),
         ("Access-Control-Allow-Origin", "*"),
-        ("Access-Control-Allow-Methods", "GET, POST, OPTIONS"),
+        ("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS"),
         ("Access-Control-Allow-Headers", "content-type"),
         ("Cache-Control", "no-store"),
     ] {
@@ -402,6 +518,7 @@ mod tests {
             Served {
                 dir: self.0.clone(),
                 host: Host::new(),
+                edit: true,
                 entries: BTreeMap::new(),
                 waiting: Vec::new(),
             }
@@ -544,5 +661,46 @@ mod tests {
         );
         assert_eq!(e.revision, 2);
         assert!(e.error.as_deref().unwrap().contains("nope"));
+    }
+
+    #[test]
+    fn a_written_script_loads_at_once_and_keeps_state() {
+        let folder = Folder::new("write");
+        folder.write("counter.luau", COUNTER, 1);
+        let mut s = folder.served();
+        s.scan();
+        let e = s.entries.get_mut("counter").unwrap();
+        let version = e.frame.as_ref().unwrap().version;
+        e.event(
+            "counter",
+            Event {
+                version,
+                id: "h1".into(),
+                value: serde_json::Value::Null,
+            },
+        );
+
+        let body = s
+            .write("counter", &COUNTER.replace("\"Count\"", "\"Clicks\""))
+            .unwrap();
+        let snap: serde_json::Value = serde_json::from_str(&body).unwrap();
+        assert_eq!(snap["error"], serde_json::Value::Null);
+        assert_eq!(snap["frame"]["root"]["children"][0]["text"], "Clicks 1");
+        assert_eq!(
+            std::fs::read_to_string(folder.0.join("counter.luau")).unwrap(),
+            COUNTER.replace("\"Count\"", "\"Clicks\"")
+        );
+
+        // A broken script is written and reported; the last frame stays.
+        let body = s.write("counter", "return function( end").unwrap();
+        let snap: serde_json::Value = serde_json::from_str(&body).unwrap();
+        assert!(snap["error"].as_str().unwrap().starts_with("syntax error"));
+        assert_eq!(snap["frame"]["root"]["children"][0]["text"], "Clicks 1");
+
+        // A new name makes a new view.
+        let body = s.write("fresh", "return ui.text('new')").unwrap();
+        let snap: serde_json::Value = serde_json::from_str(&body).unwrap();
+        assert_eq!(snap["frame"]["root"]["text"], "new");
+        assert!(s.entries.contains_key("fresh"));
     }
 }
