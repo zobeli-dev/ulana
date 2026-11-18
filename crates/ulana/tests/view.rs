@@ -406,3 +406,21 @@ fn a_view_rebuilt_per_request_handles_presses() {
         saved = view.state();
     }
 }
+
+#[test]
+fn the_spec_ships_with_the_crate() {
+    assert!(ulana::SPEC.starts_with("# Writing an Ulana view"));
+    for block in [
+        "ui.grid",
+        "ui.field",
+        "ui.choice",
+        "ui.icon",
+        "ui.image",
+        "ui.custom",
+    ] {
+        assert!(
+            ulana::SPEC.contains(block),
+            "{block} is missing from the spec"
+        );
+    }
+}

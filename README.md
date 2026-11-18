@@ -137,6 +137,7 @@ Give the model [`spec/ulana.md`](spec/ulana.md), the current script, the data it
 | [docs/rust.md](docs/rust.md) | Running views in your own server: `View`, `Host`, `Limits`, state, errors. |
 | [docs/models.md](docs/models.md) | Letting a model write views: prompt, repair loop, safety. |
 | [docs/protocol.md](docs/protocol.md) | The frame format and the `ulana serve` HTTP API. |
+| [docs/publishing.md](docs/publishing.md) | For maintainers: releasing to crates.io, npm, and SwiftPM. |
 | [AGENTS.md](AGENTS.md) | For contributors and coding agents: layout, rules, checks. |
 
 ## What is in this repository

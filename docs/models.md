@@ -4,7 +4,7 @@ Ulana's API is small and its errors name what went wrong, so a model can write a
 
 ## What to send
 
-1. **The API.** Send [`spec/ulana.md`](../spec/ulana.md) whole. It is written for a model: every block, token, and icon name, with patterns. `ulana serve` serves it at `GET /host`.
+1. **The API.** Send [`spec/ulana.md`](../spec/ulana.md) whole. It is written for a model: every block, token, and icon name, with patterns. In Rust it is `ulana::SPEC`, and `ulana serve` serves it at `GET /host`.
 2. **What your app accepts.** List the custom blocks, host actions, and image addresses your `Host` allows, and say there are no others. `GET /host` returns these too.
 3. **What the tones look like.** A model asked for "orange" cannot know your `warning` tone is amber. Send each tone's colour (`accent #2563EB, warning #B45309, …`) and tell it to pick the closest.
 4. **The current script and its data.** Send the whole script and the JSON its function gets, so the model keeps what the user did not ask to change and reads real fields instead of inventing them.

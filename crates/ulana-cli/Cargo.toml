@@ -1,14 +1,19 @@
 [package]
 name = "ulana-cli"
+description = "The ulana command: render Luau views, check trees, and serve a folder of views with hot reload."
+readme = "README.md"
+keywords = ["luau", "ui", "hot-reload", "generative-ui", "cli"]
+categories = ["command-line-utilities", "gui"]
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-publish = false
+repository.workspace = true
+rust-version.workspace = true
 [[bin]]
 name = "ulana"
 path = "src/main.rs"
 [dependencies]
-ulana = { path = "../ulana" }
+ulana = { path = "../ulana", version = "0.1.0" }
 serde_json.workspace = true
 serde.workspace = true
 tiny_http = "0.12"
