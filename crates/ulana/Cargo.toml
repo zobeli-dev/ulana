@@ -2,6 +2,8 @@
 name = "ulana"
 description = "Luau scripts that draw native UI: a sandboxed runtime and a checked block tree."
 readme = "README.md"
+# tests/schema.rs compares spec/frame.schema.json, which lives outside the crate.
+exclude = ["tests/schema.rs"]
 keywords = ["luau", "ui", "sandbox", "generative-ui", "server-driven-ui"]
 categories = ["gui", "sandbox"]
 version.workspace = true

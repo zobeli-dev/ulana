@@ -28,8 +28,6 @@ const LOG_LINES: usize = 50;
 const BODY_LIMIT: u64 = 64 * 1024;
 /// The largest script a client may write.
 const SOURCE_LIMIT: u64 = 256 * 1024;
-/// The API a view sees, for clients that ask a model to write one.
-const SPEC: &str = include_str!("../../../spec/ulana.md");
 
 pub struct Options {
     pub dir: PathBuf,
@@ -215,7 +213,7 @@ impl Served {
         match (request.method(), parts.as_slice()) {
             (Method::Get, ["host"]) => {
                 let info = HostInfo {
-                    spec: SPEC,
+                    spec: ulana::SPEC,
                     blocks: self.host.blocks().collect(),
                     actions: self.host.actions().collect(),
                     images: self.host.images().collect(),

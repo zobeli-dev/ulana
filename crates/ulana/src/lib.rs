@@ -43,6 +43,10 @@ pub use check::{parse, Host, Limits};
 pub use error::{Error, Result};
 pub use runtime::{State, View};
 
+/// The view API on one page (`spec/ulana.md`), written to be given to a
+/// model that writes views. Send it whole, with what your [`Host`] accepts.
+pub const SPEC: &str = include_str!("../SPEC.md");
+
 /// The JSON Schema of a [`Frame`], for hosts in other languages.
 pub fn frame_schema() -> serde_json::Value {
     serde_json::to_value(schemars::schema_for!(Frame)).expect("a schema is JSON")

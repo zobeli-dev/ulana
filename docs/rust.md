@@ -86,6 +86,8 @@ let limits = Limits { time: std::time::Duration::from_millis(50), ..Limits::defa
 
 ## Trees that are not scripts
 
+To have a model write views, send it `ulana::SPEC`, the view API on one page ([models.md](models.md)).
+
 `ulana::parse(json, &host, &limits)` checks a tree written as JSON, by a model or by your server, with the same rules. It cannot use `event` actions, because there is no script to handle them. Use host actions instead. `ulana::frame_schema()` returns the JSON Schema of a frame.
 
 ## The sandbox
