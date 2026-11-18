@@ -1,0 +1,13 @@
+[package]
+name = "ulana-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+[[bin]]
+name = "ulana"
+path = "src/main.rs"
+[dependencies]
+ulana = { path = "../ulana" }
+serde_json.workspace = true
+serde.workspace = true

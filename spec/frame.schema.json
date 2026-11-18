@@ -1,0 +1,569 @@
+{
+  "$defs": {
+    "Action": {
+      "description": "What a press or a change does.",
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "description": "Run the view's own handler, then render again.",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "kind": {
+              "const": "event",
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "id"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Ask the host app to do something it named, such as sending a message.",
+          "properties": {
+            "kind": {
+              "const": "host",
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "value": {
+              "default": null
+            }
+          },
+          "required": [
+            "kind",
+            "name"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "Align": {
+      "enum": [
+        "start",
+        "center",
+        "end",
+        "stretch"
+      ],
+      "type": "string"
+    },
+    "Block": {
+      "description": "A piece of UI. The host maps each type to its own native component.",
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "description": "Children top to bottom.",
+          "properties": {
+            "align": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Align"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "children": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/Block"
+              },
+              "type": "array"
+            },
+            "gap": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Space"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "padding": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Space"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": {
+              "const": "stack",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Children left to right (start to end in right-to-left languages).",
+          "properties": {
+            "align": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Align"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "children": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/Block"
+              },
+              "type": "array"
+            },
+            "gap": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Space"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "justify": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Justify"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "padding": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Space"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": {
+              "const": "row",
+              "type": "string"
+            },
+            "wrap": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "lines": {
+              "description": "Cut the text after this many lines.",
+              "format": "uint8",
+              "maximum": 255,
+              "minimum": 0,
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "style": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/TextStyle"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "text": {
+              "type": "string"
+            },
+            "tone": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Tone"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": {
+              "const": "text",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "text"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "A surface with an optional title.",
+          "properties": {
+            "children": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/Block"
+              },
+              "type": "array"
+            },
+            "title": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "type": {
+              "const": "card",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Children with dividers between them. Usually `item` blocks.",
+          "properties": {
+            "children": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/Block"
+              },
+              "type": "array"
+            },
+            "type": {
+              "const": "list",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "A list row: a title, an optional second line, and an optional value at the end.",
+          "properties": {
+            "action": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Action"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "subtitle": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "title": {
+              "type": "string"
+            },
+            "trailing": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "type": {
+              "const": "item",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "title"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "action": {
+              "$ref": "#/$defs/Action"
+            },
+            "label": {
+              "type": "string"
+            },
+            "style": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/ButtonStyle"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": {
+              "const": "button",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "label",
+            "action"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "action": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Action"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Gets the new value."
+            },
+            "label": {
+              "type": "string"
+            },
+            "type": {
+              "const": "toggle",
+              "type": "string"
+            },
+            "value": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "type",
+            "label",
+            "value"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "A bar from 0 to 1.",
+          "properties": {
+            "label": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "tone": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Tone"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": {
+              "const": "progress",
+              "type": "string"
+            },
+            "value": {
+              "format": "double",
+              "type": "number"
+            }
+          },
+          "required": [
+            "type",
+            "value"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "A short label in a pill.",
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "tone": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Tone"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": {
+              "const": "badge",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "text"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "const": "divider",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Empty space: a fixed size, or all that is left when there is no size.",
+          "properties": {
+            "size": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Space"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": {
+              "const": "spacer",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "A block the host app adds, such as a calendar. The host lists the names it accepts.",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "props": {
+              "default": null
+            },
+            "type": {
+              "const": "custom",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "name"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "ButtonStyle": {
+      "enum": [
+        "primary",
+        "secondary",
+        "plain"
+      ],
+      "type": "string"
+    },
+    "Justify": {
+      "enum": [
+        "start",
+        "center",
+        "end",
+        "between"
+      ],
+      "type": "string"
+    },
+    "Space": {
+      "description": "Spacing tokens. The host's theme decides the points.",
+      "enum": [
+        "none",
+        "xs",
+        "sm",
+        "md",
+        "lg",
+        "xl"
+      ],
+      "type": "string"
+    },
+    "TextStyle": {
+      "enum": [
+        "title",
+        "heading",
+        "body",
+        "caption",
+        "mono"
+      ],
+      "type": "string"
+    },
+    "Tone": {
+      "enum": [
+        "default",
+        "muted",
+        "accent",
+        "success",
+        "warning",
+        "danger"
+      ],
+      "type": "string"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "One rendered tree and the version its events must name.",
+  "properties": {
+    "root": {
+      "$ref": "#/$defs/Block"
+    },
+    "version": {
+      "description": "Goes up by one on every render. An event for an older frame is refused.",
+      "format": "uint64",
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "version",
+    "root"
+  ],
+  "title": "Frame",
+  "type": "object"
+}

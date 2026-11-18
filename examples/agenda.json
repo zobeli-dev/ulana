@@ -1,0 +1,7 @@
+{
+  "events": [
+    { "title": "Standup", "time": "09:00", "place": "Room 2" },
+    { "title": "Lunch with Ana", "time": "12:30", "place": "Tasca" },
+    { "title": "Dentist", "time": "17:00", "place": "Rua Augusta 21" }
+  ]
+}
