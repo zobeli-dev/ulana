@@ -1,0 +1,5 @@
+module UlanaCore {
+    header "ulana.h"
+    link "c++"
+    export *
+}

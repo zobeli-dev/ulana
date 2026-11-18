@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/ulana", "crates/ulana-cli"]
+members = ["crates/ulana", "crates/ulana-cli", "crates/ulana-ffi"]
 
 [workspace.package]
 version = "0.1.0"
@@ -14,3 +14,9 @@ mlua = { version = "0.12", features = ["luau", "serde"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 schemars = "1"
+
+[profile.release]
+# Smaller static libraries for the XCFramework.
+strip = "debuginfo"
+lto = "thin"
+codegen-units = 1

@@ -33,9 +33,12 @@ Apps that let a model change their interface usually pick one of two paths. JSON
 | [`crates/ulana`](crates/ulana) | The Rust library: blocks, checker, and the sandboxed Luau runtime (through [mlua](https://github.com/mlua-rs/mlua)). |
 | [`crates/ulana-cli`](crates/ulana-cli) | `ulana render`, `ulana check`, `ulana serve` (hot reload over HTTP), `ulana schema`. |
 | [`packages/react-native`](packages/react-native) | `@zobeli/ulana-react-native`: draws a frame with React Native's own components. |
+| [`packages/swift`](packages/swift) | Swift package: `Ulana` draws a frame with SwiftUI and follows views on a server; `UlanaLocal` runs views on the device with the Rust runtime. |
+| [`crates/ulana-ffi`](crates/ulana-ffi) | A C interface to the runtime, built into `UlanaCore.xcframework` by `scripts/build-xcframework.sh`. |
 | [`spec/ulana.md`](spec/ulana.md) | The API, for models and people. |
 | [`spec/frame.schema.json`](spec/frame.schema.json) | JSON Schema of a frame, generated from the Rust types. |
 | [`examples/views`](examples/views) | `counter.luau`, `todo.luau`, and `agenda.luau` with `agenda.json`. |
+| [`examples/ios`](examples/ios) | A SwiftUI iPhone app that runs the example views on the device or on a server. |
 | [`examples/expo`](examples/expo) | An Expo app that draws whatever `ulana serve` runs, on iOS, Android, and the web, with a chat that asks a model (through OpenRouter) to change the view. |
 
 ## How it fits together
@@ -51,7 +54,7 @@ Apps that let a model change their interface usually pick one of two paths. JSON
 3. The app draws it. A press on an `event` action calls `view.event(version, id, value)`; the app renders again. A press on a `host` action goes to the app.
 4. `view.state()` is plain JSON. Save it and pass it back with `View::with_state` to pick up where the user left off. `view.reload(source)` swaps the script and keeps the state.
 
-For now the runtime is Rust, so it runs on a server or in a desktop app, and a phone receives frames. Running it on the phone itself (iOS, Android, and WebAssembly) is planned, using the same crate.
+The runtime is Rust, so it runs on a server, in a desktop app, or on an iPhone (through `crates/ulana-ffi` and the Swift package's `UlanaLocal`); a phone can also just receive frames from a server. Running it on Android and in WebAssembly is planned, using the same crate.
 
 ### Rust
 
@@ -115,7 +118,7 @@ cd examples/expo && bun run typecheck
 
 ## Not yet
 
-- The runtime on iOS, Android, and the web (WebAssembly).
+- The runtime on Android and the web (WebAssembly).
 - Text fields, images, and charts.
 - Publishing to crates.io and npm.
 

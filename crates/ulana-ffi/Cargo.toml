@@ -1,0 +1,17 @@
+[package]
+name = "ulana-ffi"
+description = "A C interface to the Ulana runtime, for Swift and other native hosts."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[lib]
+name = "ulana_ffi"
+crate-type = ["staticlib", "rlib"]
+
+[dependencies]
+ulana = { path = "../ulana" }
+serde.workspace = true
+serde_json.workspace = true
