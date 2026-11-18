@@ -10,7 +10,7 @@ const USAGE: &str = "\
 usage:
   ulana render <view.luau> [--data <file.json>] [--event <id>[=<json>]]... [options]
   ulana check <tree.json> [options]
-  ulana serve <folder> [--bind <address>] [options]
+  ulana serve <folder> [--bind <address>] [--edit] [options]
   ulana schema
 
 render  runs a view, applies each --event in order (rendering before each),
@@ -22,7 +22,13 @@ serve   runs every <name>.luau in the folder (with <name>.json as its data
           GET  /views                      the views and their revisions
           GET  /views/<name>?since=<rev>   the view, after it changes
           POST /views/<name>/events        { version, id, value }
+          GET  /views/<name>/source        the script and its data
+          PUT  /views/<name>/source        { source }, only with --edit
+          GET  /host                       the view API, custom blocks, actions
         --bind defaults to 127.0.0.1:8790; use 0.0.0.0:8790 for a phone.
+        --edit lets clients write scripts into the folder (for an app that
+        asks a model to change its interface). Only use it on a network
+        you trust.
 schema  prints the JSON Schema of a frame.
 
 options:
@@ -50,6 +56,7 @@ fn run(args: &[String]) -> Result<String, String> {
     let mut events = Vec::new();
     let mut host = Host::new();
     let mut bind = "127.0.0.1:8790".to_string();
+    let mut edit = false;
     let mut it = rest.iter();
     while let Some(arg) = it.next() {
         let mut value = || {
@@ -63,6 +70,7 @@ fn run(args: &[String]) -> Result<String, String> {
             "--data" => data = json_file(&value()?)?,
             "--event" => events.push(value()?),
             "--bind" => bind = value()?,
+            "--edit" => edit = true,
             "-h" | "--help" => return Err(USAGE.into()),
             _ if file.is_none() && !arg.starts_with('-') => file = Some(arg.clone()),
             _ => return Err(format!("unexpected `{arg}`\n\n{USAGE}")),
@@ -75,7 +83,12 @@ fn run(args: &[String]) -> Result<String, String> {
             if !dir.is_dir() {
                 return Err(format!("{} is not a folder", dir.display()));
             }
-            serve::serve(serve::Options { dir, bind, host })?;
+            serve::serve(serve::Options {
+                dir,
+                bind,
+                host,
+                edit,
+            })?;
             Ok(String::new())
         }
         "check" => {

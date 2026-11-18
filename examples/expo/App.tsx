@@ -1,42 +1,39 @@
-// Draws the views `ulana serve` runs. Save a .luau file and the screen
-// changes, keeping its state.
+// Draws the views `ulana serve` runs, with a chat that asks a model to
+// change them. Saving a .luau file by hand changes the screen too; either
+// way the view keeps its state.
 //
-//   cargo run -p ulana-cli -- serve examples/views --block calendar --action send
-//   cd examples/expo && bun run start
+//   cargo run -p ulana-cli -- serve examples/views --edit --block calendar --action send
+//   cd examples/expo && bun run web
 //
-// On a phone, serve with `--bind 0.0.0.0:8790` and set EXPO_PUBLIC_ULANA_URL
-// to this machine's address on the network, such as http://192.168.1.20:8790.
+// Settings are in .env (see .env.example).
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { UlanaView, defaultTheme, isFrame } from "@zobeli/ulana-react-native";
-import type { CustomBlockProps, Frame, Json } from "@zobeli/ulana-react-native";
+import type { CustomBlockProps, Json } from "@zobeli/ulana-react-native";
 
-const SERVER =
-  process.env.EXPO_PUBLIC_ULANA_URL ??
-  (Platform.OS === "android" ? "http://10.0.2.2:8790" : "http://127.0.0.1:8790");
-
-/** What `ulana serve` answers for one view. */
-type Snapshot = {
-  name: string;
-  revision: number;
-  frame: Frame | null;
-  error: string | null;
-  logs: string[];
-};
-
-type Listed = { name: string; revision: number };
+import { Chat } from "./src/Chat";
+import { SERVER, getHost, getSnapshot, listViews, putSource, sendEvent, type HostInfo, type Listed, type Snapshot } from "./src/server";
 
 const theme = defaultTheme;
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Where a new view starts. */
+const STARTER = `-- A new view. Ask the chat to build something here.
+return function(data)
+	return ui.card{ title = "New view",
+		ui.text{ "Tell the chat what this screen should show.", tone = "muted" },
+	}
+end
+`;
 
 export default function App() {
   return (
     <SafeAreaProvider>
       <StatusBar style="dark" />
-      <SafeAreaView style={styles.screen} edges={["top", "left", "right"]}>
+      <SafeAreaView style={styles.screen} edges={["top", "left", "right", "bottom"]}>
         <Example />
       </SafeAreaView>
     </SafeAreaProvider>
@@ -44,26 +41,62 @@ export default function App() {
 }
 
 function Example() {
+  const { width } = useWindowDimensions();
+  const wide = width >= 900;
   const views = useViews();
+  const host = useHost();
   const [picked, setPicked] = useState<string | null>(null);
-  const name = picked && views.list.some((v) => v.name === picked) ? picked : (views.list[0]?.name ?? null);
+  const [chatOpen, setChatOpen] = useState(true);
+  const name = picked && views.list.some((v) => v.name === picked) ? picked : (views.list[0]?.name ?? picked);
+  const live = useSnapshot(name);
+
+  async function newView() {
+    const taken = new Set(views.list.map((v) => v.name));
+    let n = 1;
+    while (taken.has(`view-${n}`)) n++;
+    const fresh = `view-${n}`;
+    try {
+      await putSource(fresh, STARTER);
+      views.refresh();
+      setPicked(fresh);
+    } catch (e) {
+      live.fail(String(e instanceof Error ? e.message : e));
+    }
+  }
+
+  const chat = (
+    <Chat
+      view={name}
+      host={host}
+      error={live.snapshot?.error ?? null}
+      onSnapshot={live.accept}
+      style={wide ? styles.side : styles.bottom}
+    />
+  );
 
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <Text style={styles.title}>Ulana</Text>
-        <View style={styles.server}>
-          <View style={[styles.dot, { backgroundColor: views.offline ? theme.tones.danger.fg : theme.tones.success.fg }]} />
-          <Text style={styles.caption} numberOfLines={1}>
-            {SERVER}
-          </Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.title}>Ulana</Text>
+          <View style={styles.server}>
+            <View style={[styles.dot, { backgroundColor: views.offline ? theme.tones.danger.fg : theme.tones.success.fg }]} />
+            <Text style={styles.caption} numberOfLines={1}>
+              {SERVER}
+            </Text>
+          </View>
         </View>
+        {!wide ? (
+          <Pressable accessibilityRole="button" onPress={() => setChatOpen(!chatOpen)} style={styles.headButton}>
+            <Text style={styles.headButtonText}>{chatOpen ? "Hide chat" : "Chat"}</Text>
+          </Pressable>
+        ) : null}
       </View>
 
       {views.offline ? (
         <View style={styles.inset}>
           <Notice tone="danger" title="Cannot reach ulana serve">
-            {`${views.offline}\n\nStart it with:\ncargo run -p ulana-cli -- serve examples/views --block calendar --action send`}
+            {`${views.offline}\n\nStart it with:\ncargo run -p ulana-cli -- serve examples/views --edit --block calendar --action send`}
           </Notice>
         </View>
       ) : null}
@@ -80,16 +113,26 @@ function Example() {
             <Text style={[styles.tabText, v.name === name && styles.tabTextOn]}>{v.name}</Text>
           </Pressable>
         ))}
+        {host?.edit ? (
+          <Pressable accessibilityRole="button" onPress={() => void newView()} style={[styles.tab, styles.tabNew]}>
+            <Text style={styles.tabText}>+ New view</Text>
+          </Pressable>
+        ) : null}
       </ScrollView>
 
-      {name ? <Live key={name} name={name} /> : null}
+      <View style={[styles.main, wide && { flexDirection: "row" }]}>
+        <Live live={live} />
+        {wide || chatOpen ? chat : null}
+      </View>
     </View>
   );
 }
 
-/** Draws one view and keeps it in step with the server. */
-function Live({ name }: { name: string }) {
-  const { snapshot, offline, send } = useSnapshot(name);
+type LiveState = ReturnType<typeof useSnapshot>;
+
+/** Draws the picked view. */
+function Live({ live }: { live: LiveState }) {
+  const { snapshot, offline, send } = live;
   const [said, setSaid] = useState<string | null>(null);
 
   useEffect(() => {
@@ -103,18 +146,12 @@ function Live({ name }: { name: string }) {
   }, []);
 
   return (
-    <>
+    <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         {offline ? <Notice tone="warning" title="Reconnecting">{offline}</Notice> : null}
         {snapshot?.error ? <Notice tone="danger" title="The view has an error">{snapshot.error}</Notice> : null}
         {snapshot?.frame ? (
-          <UlanaView
-            frame={snapshot.frame}
-            theme={theme}
-            onEvent={send}
-            onHostAction={onHostAction}
-            blocks={{ calendar: CalendarBlock }}
-          />
+          <UlanaView frame={snapshot.frame} theme={theme} onEvent={send} onHostAction={onHostAction} blocks={{ calendar: CalendarBlock }} />
         ) : snapshot && !snapshot.error ? (
           <Text style={styles.caption}>Nothing to show yet.</Text>
         ) : null}
@@ -125,7 +162,7 @@ function Live({ name }: { name: string }) {
           <Text style={styles.toastText}>{`Host action · ${said}`}</Text>
         </View>
       ) : null}
-    </>
+    </View>
   );
 }
 
@@ -133,14 +170,13 @@ function Live({ name }: { name: string }) {
 function useViews() {
   const [list, setList] = useState<Listed[]>([]);
   const [offline, setOffline] = useState<string | null>(null);
+  const [tick, setTick] = useState(0);
   useEffect(() => {
     let alive = true;
     (async () => {
       while (alive) {
         try {
-          const r = await fetch(`${SERVER}/views`);
-          if (!r.ok) throw new Error(`HTTP ${r.status}`);
-          const views = (await r.json()) as Listed[];
+          const views = await listViews();
           if (alive) {
             setList(views);
             setOffline(null);
@@ -154,36 +190,61 @@ function useViews() {
     return () => {
       alive = false;
     };
+  }, [tick]);
+  return { list, offline, refresh: () => setTick((t) => t + 1) };
+}
+
+/** What the server says about itself: the view API and what it accepts. */
+function useHost() {
+  const [host, setHost] = useState<HostInfo | null>(null);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      while (alive) {
+        try {
+          const h = await getHost();
+          if (alive) setHost(h);
+          return;
+        } catch {
+          await sleep(2000);
+        }
+      }
+    })();
+    return () => {
+      alive = false;
+    };
   }, []);
-  return { list, offline };
+  return host;
 }
 
 /**
  * The latest snapshot of one view. A request waits on the server until the
  * view changes, so a saved file shows up at once.
  */
-function useSnapshot(name: string) {
+function useSnapshot(name: string | null) {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [offline, setOffline] = useState<string | null>(null);
   const latest = useRef(-1);
+  const current = useRef(name);
+  current.current = name;
 
   const accept = useCallback((s: Snapshot) => {
-    if (s.revision < latest.current) return;
-    if (s.frame !== null && !isFrame(s.frame)) throw new Error("the server sent something that is not a frame");
+    if (s.name !== current.current || s.revision < latest.current) return;
+    if (s.frame !== null && !isFrame(s.frame)) return;
     latest.current = s.revision;
     setSnapshot(s);
   }, []);
 
   useEffect(() => {
+    latest.current = -1;
+    setSnapshot(null);
+    if (!name) return;
     let alive = true;
     const abort = new AbortController();
     (async () => {
       while (alive) {
         try {
-          const since = latest.current >= 0 ? `?since=${latest.current}` : "";
-          const r = await fetch(`${SERVER}/views/${encodeURIComponent(name)}${since}`, { signal: abort.signal });
-          if (!r.ok) throw new Error(`HTTP ${r.status}`);
-          accept((await r.json()) as Snapshot);
+          accept(await getSnapshot(name, latest.current, abort.signal));
           setOffline(null);
         } catch (e) {
           if (!alive) return;
@@ -200,19 +261,15 @@ function useSnapshot(name: string) {
 
   const send = useCallback(
     (version: number, id: string, value: Json) => {
-      fetch(`${SERVER}/views/${encodeURIComponent(name)}/events`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ version, id, value }),
-      })
-        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-        .then((s) => accept(s as Snapshot))
+      if (!name) return;
+      sendEvent(name, version, id, value)
+        .then(accept)
         .catch((e: unknown) => setOffline(String(e)));
     },
     [name, accept],
   );
 
-  return { snapshot, offline, send };
+  return { snapshot, offline, send, accept, fail: setOffline };
 }
 
 /** Stands in for the app's own calendar, to show a `custom` block. */
@@ -257,11 +314,13 @@ const mono = Platform.select({ ios: "Menlo", android: "monospace", default: "ui-
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: theme.colors.canvas },
-  header: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4, gap: 2 },
+  header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4, gap: 8 },
   title: { fontSize: 22, fontWeight: "600", color: theme.colors.ink },
   server: { flexDirection: "row", alignItems: "center", gap: 6 },
   dot: { width: 8, height: 8, borderRadius: 4 },
   caption: { fontSize: 13, lineHeight: 18, color: theme.tones.muted.fg, flexShrink: 1 },
+  headButton: { minHeight: 44, justifyContent: "center", paddingHorizontal: 12 },
+  headButtonText: { fontSize: 15, color: theme.tones.accent.fg, fontWeight: "500" },
   tabsBar: { flexGrow: 0 },
   tabs: { paddingHorizontal: 16, paddingVertical: 8, gap: 8 },
   tab: {
@@ -274,8 +333,12 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
   },
   tabOn: { backgroundColor: theme.colors.ink, borderColor: theme.colors.ink },
+  tabNew: { borderStyle: "dashed" },
   tabText: { fontSize: 14, color: theme.colors.ink },
   tabTextOn: { color: theme.colors.surface },
+  main: { flex: 1 },
+  side: { width: 380, borderLeftWidth: StyleSheet.hairlineWidth },
+  bottom: { height: "48%", borderTopWidth: StyleSheet.hairlineWidth },
   body: { padding: 16, gap: 12, paddingBottom: 48 },
   inset: { paddingHorizontal: 16, paddingTop: 8 },
   notice: { borderRadius: 12, padding: 12, gap: 4 },
