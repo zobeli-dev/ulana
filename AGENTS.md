@@ -15,6 +15,9 @@ Luau scripts that draw native UI. Read [README.md](README.md) for what it is and
 | `crates/ulana-cli/src/main.rs` | The `ulana` binary: `render`, `check`, `serve`, `schema`. |
 | `crates/ulana-cli/src/serve.rs` | `ulana serve`: one thread owns every view, rescans the folder every 250 ms, and answers long polls when a view's revision moves. |
 | `packages/react-native` | The renderer. `src/types.ts` mirrors `block.rs` by hand; `test/sync.test.ts` fails when they drift. |
+| `crates/ulana-ffi` | The C interface (`include/ulana.h`): JSON in, `{"ok"}` or `{"error"}` out, panics caught. `scripts/build-xcframework.sh` builds it for iPhone, the simulator, and macOS into `packages/swift/UlanaCore.xcframework` (not committed). |
+| `packages/swift` | Swift package. `Ulana`: `Frame.swift` mirrors `block.rs` by hand, `UlanaView.swift` draws with SwiftUI, `Session.swift` has `ServerSession`. `UlanaLocal`: `LocalView` over the C interface, `LocalSession` for SwiftUI. `Package.swift` leaves `UlanaLocal` out when the XCFramework is missing. `Tests/UlanaTests/SchemaTests.swift` fails when the Swift types drift from the schema. |
+| `examples/ios` | SwiftUI example app, generated with XcodeGen from `project.yml` (the `.xcodeproj` is not committed). |
 | `packages/react-native/test/render.test.tsx` | Draws every block through react-native-web (`test/setup.ts` swaps the module), no device needed. |
 | `examples/views` | Views `ulana serve examples/views` runs. |
 | `examples/expo` | The example app. A Bun workspace with `packages/*`, so there is one copy of React; install from the root. |
@@ -24,7 +27,7 @@ Luau scripts that draw native UI. Read [README.md](README.md) for what it is and
 
 - A view is untrusted code. Never give it a way to reach the network, files, the host's tools, or another view. A new capability goes through a host action the host names, not a new global.
 - Every tree is checked in Rust before it is drawn, wherever it came from. Do not move a check into a renderer.
-- Changing a block means changing `block.rs`, the checker if it has rules, `prelude.luau` if the Luau call changes, `spec/ulana.md`, `types.ts`, `UlanaView.tsx`, the sync test's field list, and the schema (bless it).
+- Changing a block means changing `block.rs`, the checker if it has rules, `prelude.luau` if the Luau call changes, `spec/ulana.md`, `types.ts`, `UlanaView.tsx`, the sync test's field list, `Frame.swift` and the Swift `UlanaView.swift`, and the schema (bless it).
 - Errors are read by models. Name the path and say what would be accepted.
 
 ## Check
@@ -33,6 +36,8 @@ Luau scripts that draw native UI. Read [README.md](README.md) for what it is and
 cargo fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
+scripts/build-xcframework.sh && (cd packages/swift && swift test)
+(cd examples/ios && xcodegen && xcodebuild -project UlanaExample.xcodeproj -scheme UlanaExample -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build)
 bun install
 (cd packages/react-native && bun run typecheck && bun test)
 (cd examples/expo && bun run typecheck && CI=1 bunx expo export --platform ios --platform web --output-dir /tmp/ulana-export)

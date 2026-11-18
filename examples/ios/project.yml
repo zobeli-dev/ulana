@@ -1,0 +1,53 @@
+# The example app. Generate the Xcode project with XcodeGen:
+#   brew install xcodegen
+#   scripts/build-xcframework.sh     # the runtime for "On this iPhone"
+#   cd examples/ios && xcodegen && open UlanaExample.xcodeproj
+name: UlanaExample
+options:
+  bundleIdPrefix: dev.zobeli
+  deploymentTarget:
+    iOS: "17.0"
+packages:
+  Ulana:
+    path: ../../packages/swift
+targets:
+  UlanaExample:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources
+      # The same views `ulana serve examples/views` runs, bundled for on-device mode.
+      - path: ../views
+        type: folder
+        buildPhase: resources
+    dependencies:
+      - package: Ulana
+        product: Ulana
+      - package: Ulana
+        product: UlanaLocal
+    info:
+      path: Info.plist
+      properties:
+        CFBundleDisplayName: Ulana
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        # Plain http to `ulana serve` on this Mac or the local network.
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        NSLocalNetworkUsageDescription: Ulana reaches ulana serve on your computer to draw the views it runs.
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.zobeli.ulana.example
+        SWIFT_VERSION: "6.0"
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        CODE_SIGN_STYLE: Automatic

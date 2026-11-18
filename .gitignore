@@ -3,3 +3,11 @@ node_modules/
 .DS_Store
 .expo/
 dist/
+
+# Built by scripts/build-xcframework.sh
+packages/swift/UlanaCore.xcframework/
+packages/swift/.build/
+packages/swift/.swiftpm/
+examples/ios/*.xcodeproj/
+examples/ios/build/
+examples/ios/Info.plist
