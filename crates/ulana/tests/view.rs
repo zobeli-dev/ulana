@@ -390,3 +390,19 @@ fn the_new_blocks_build_from_luau() {
         "at root.src: this app shows no images"
     );
 }
+
+/// docs/rust.md: a server may build the view per request from saved state.
+#[test]
+fn a_view_rebuilt_per_request_handles_presses() {
+    let mut saved = ulana::State::new();
+    for expected in 1..=3 {
+        let mut view = View::with_state(COUNTER, Host::new(), Limits::default(), saved).unwrap();
+        view.render(&Value::Null).unwrap();
+        view.event(view.version(), "h1", &Value::Null).unwrap();
+        let frame = view.render(&Value::Null).unwrap();
+        assert!(
+            matches!(&frame.root.children()[0], Block::Text { text, .. } if *text == format!("Count: {expected}"))
+        );
+        saved = view.state();
+    }
+}

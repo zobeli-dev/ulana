@@ -1,6 +1,9 @@
 [package]
 name = "ulana"
 description = "Luau scripts that draw native UI: a sandboxed runtime and a checked block tree."
+readme = "README.md"
+keywords = ["luau", "ui", "sandbox", "generative-ui", "server-driven-ui"]
+categories = ["gui", "sandbox"]
 version.workspace = true
 edition.workspace = true
 license.workspace = true

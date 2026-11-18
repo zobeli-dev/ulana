@@ -8,7 +8,9 @@ import { defaultTheme as theme } from "@zobeli/ulana-react-native";
 
 import { MODEL, changeView, checkKey, type Turn } from "./ai";
 import { forgetKey, loadKey, saveKey } from "./keyStore";
-import { putSource, type HostInfo, type Snapshot } from "./server";
+import type { Snapshot } from "@zobeli/ulana-react-native";
+
+import { putSource, type HostInfo } from "./server";
 
 type Line =
   | { kind: "user"; id: number; text: string; view: string }
