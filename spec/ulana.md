@@ -32,12 +32,17 @@ Positional entries come first; named fields follow. A block that takes text can 
 | --- | --- | --- |
 | `ui.stack{ … }` | children, top to bottom | `gap`, `padding` (space), `align` |
 | `ui.row{ … }` | children, start to end | `gap` (default `"sm"`), `padding`, `align` (default `"center"`), `justify`, `wrap` (boolean) |
-| `ui.card{ … }` | children | `title` |
+| `ui.card{ … }` | children | `title`, `tone` (tints the card), `padding` (space, default `"md"`) |
+| `ui.grid{ … }` | children, in rows | `columns` (1 to 6, required), `gap` (space) |
 | `ui.list{ … }` | children, with dividers between (use `ui.item`) | |
 | `ui.text{ … }` | the text | `style`, `tone`, `lines` (cut after this many) |
-| `ui.item{ … }` | the title | `subtitle`, `trailing` (text at the end), `on_press` or `action` |
-| `ui.button{ … }` | the label | `on_press` or `action` (one is required), `style` |
+| `ui.item{ … }` | the title | `icon`, `subtitle`, `trailing` (text at the end), `on_press` or `action` |
+| `ui.button{ … }` | the label | `on_press` or `action` (one is required), `icon`, `style` |
 | `ui.toggle{ … }` | the label | `value` (boolean, required), `on_change` (gets the new value) or `action` |
+| `ui.field{ … }` | the label | `value` (text), `placeholder`, `kind`, `on_change` (gets the text after every change), `on_submit` (gets the text when return is pressed) |
+| `ui.choice{ … }` | the options, 2 to 8 | `value` (one of the options, required), `label`, `on_change` (gets the option picked) |
+| `ui.icon{ … }` or `ui.icon(name)` | the icon's name | `tone`, `style` (sized like text in that style), `label` (what it means, for screen readers) |
+| `ui.image{ … }` | | `src` and `alt` (what it shows), both required; `aspect` (width / height, 0.25 to 4, default 16/9). Only addresses the app allows work. |
 | `ui.progress{ … }` | the value, 0 to 1 | `label`, `tone` |
 | `ui.badge{ … }` | the text | `tone` |
 | `ui.divider()` | | |
@@ -53,9 +58,11 @@ Children may be blocks, strings or numbers (shown as text), `nil` or `false` (sk
 | space | `"none"`, `"xs"`, `"sm"`, `"md"`, `"lg"`, `"xl"` |
 | `align` | `"start"`, `"center"`, `"end"`, `"stretch"` |
 | `justify` | `"start"`, `"center"`, `"end"`, `"between"` |
-| `style` (text) | `"title"`, `"heading"`, `"body"`, `"caption"`, `"mono"` |
+| `style` (text) | `"display"` (biggest: a hero number or headline), `"title"`, `"heading"`, `"body"`, `"caption"`, `"mono"` |
 | `tone` | `"default"`, `"muted"`, `"accent"`, `"success"`, `"warning"`, `"danger"` |
 | `style` (button) | `"primary"`, `"secondary"`, `"plain"` |
+| `kind` (field) | `"text"`, `"number"`, `"email"`, `"search"` |
+| icon names | `add`, `remove`, `close`, `check`, `chevron_left`, `chevron_right`, `search`, `settings`, `info`, `warning`, `error`, `star`, `heart`, `bookmark`, `calendar`, `clock`, `location`, `person`, `people`, `mail`, `phone`, `message`, `home`, `bell`, `sun`, `moon`, `cloud`, `rain`, `snow`, `wind`, `bolt`, `cart`, `gift`, `music`, `camera`, `photo`, `link`, `share`, `trash`, `edit`, `refresh`, `lock`, `flag`, `play`, `pause` |
 
 ## Events and state
 
@@ -76,6 +83,39 @@ ui.button{ "Add", on_press = function()
 	end)
 end }
 ```
+
+## Patterns
+
+**Tabs or filters**: keep the choice in state and draw what it picks.
+
+```luau
+local tab = ui.state("tab", "Today")
+return ui.stack{ gap = "md",
+	ui.choice{ "Today", "Week", value = tab:get(), on_change = function(t) tab:set(t) end },
+	tab:get() == "Today" and ui.text("Today's list") or ui.text("This week"),
+}
+```
+
+**A form**: a field keeps its own text while the user types; save it in state from `on_change` or `on_submit`.
+
+```luau
+local name = ui.state("name", "")
+return ui.card{ title = "Your name",
+	ui.field{ "Name", value = name:get(), placeholder = "Ana", on_submit = function(t) name:set(t) end },
+	name:get() ~= "" and ui.text{ "Hello, " .. name:get(), style = "heading" },
+}
+```
+
+**A dashboard**: a grid of tinted cards with an icon and a big number.
+
+```luau
+ui.grid{ columns = 2, gap = "md",
+	ui.card{ tone = "accent", ui.icon{ "mail", tone = "accent" }, ui.text{ "12", style = "display" }, ui.text{ "unread", tone = "muted" } },
+	ui.card{ tone = "success", ui.icon{ "check", tone = "success" }, ui.text{ "5", style = "display" }, ui.text{ "done", tone = "muted" } },
+}
+```
+
+**Images**: the app lists the addresses it shows images from; any other address is refused. When it allows `https://picsum.photos/`, `https://picsum.photos/seed/<word>/<width>/<height>` gives a steady photo for a word.
 
 ## Host actions
 

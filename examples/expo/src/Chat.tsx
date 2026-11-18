@@ -173,7 +173,7 @@ export function Chat(props: {
           >
             {props.host && !props.host.edit ? (
               <Text style={[styles.note, { color: theme.tones.danger.fg }]}>
-                {"The server does not let the chat write views. Start it with --edit:\ncargo run -p ulana-cli -- serve examples/views --edit --block calendar --action send"}
+                {"The server does not let the chat write views. Start it with --edit:\ncargo run -p ulana-cli -- serve examples/views --edit --block calendar --action send --image https://picsum.photos/"}
               </Text>
             ) : null}
             {lines.length === 0 ? (

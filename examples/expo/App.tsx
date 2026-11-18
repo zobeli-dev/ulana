@@ -2,7 +2,7 @@
 // change them. Saving a .luau file by hand changes the screen too; either
 // way the view keeps its state.
 //
-//   cargo run -p ulana-cli -- serve examples/views --edit --block calendar --action send
+//   cargo run -p ulana-cli -- serve examples/views --edit --block calendar --action send --image https://picsum.photos/
 //   cd examples/expo && bun run web
 //
 // Settings are in .env (see .env.example).
@@ -15,6 +15,7 @@ import { UlanaView, defaultTheme, isFrame } from "@zobeli/ulana-react-native";
 import type { CustomBlockProps, Json } from "@zobeli/ulana-react-native";
 
 import { Chat } from "./src/Chat";
+import { ionicons } from "./src/icons";
 import { SERVER, getHost, getSnapshot, listViews, putSource, sendEvent, type HostInfo, type Listed, type Snapshot } from "./src/server";
 
 const theme = defaultTheme;
@@ -96,7 +97,7 @@ function Example() {
       {views.offline ? (
         <View style={styles.inset}>
           <Notice tone="danger" title="Cannot reach ulana serve">
-            {`${views.offline}\n\nStart it with:\ncargo run -p ulana-cli -- serve examples/views --edit --block calendar --action send`}
+            {`${views.offline}\n\nStart it with:\ncargo run -p ulana-cli -- serve examples/views --edit --block calendar --action send --image https://picsum.photos/`}
           </Notice>
         </View>
       ) : null}
@@ -151,7 +152,14 @@ function Live({ live }: { live: LiveState }) {
         {offline ? <Notice tone="warning" title="Reconnecting">{offline}</Notice> : null}
         {snapshot?.error ? <Notice tone="danger" title="The view has an error">{snapshot.error}</Notice> : null}
         {snapshot?.frame ? (
-          <UlanaView frame={snapshot.frame} theme={theme} onEvent={send} onHostAction={onHostAction} blocks={{ calendar: CalendarBlock }} />
+          <UlanaView
+            frame={snapshot.frame}
+            theme={theme}
+            onEvent={send}
+            onHostAction={onHostAction}
+            blocks={{ calendar: CalendarBlock }}
+            icons={ionicons}
+          />
         ) : snapshot && !snapshot.error ? (
           <Text style={styles.caption}>Nothing to show yet.</Text>
         ) : null}

@@ -5,7 +5,7 @@ Draws the views `ulana serve` runs, with a chat that asks a model to change them
 ```sh
 # from the repository root
 bun install
-cargo run -p ulana-cli -- serve examples/views --edit --block calendar --action send
+cargo run -p ulana-cli -- serve examples/views --edit --block calendar --action send --image https://picsum.photos/
 # in another terminal
 cd examples/expo
 cp .env.example .env

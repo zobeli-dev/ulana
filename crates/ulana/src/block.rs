@@ -56,10 +56,23 @@ pub enum Block {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         lines: Option<u8>,
     },
-    /// A surface with an optional title.
+    /// A surface with an optional title. A tone tints it.
     Card {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         title: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        tone: Option<Tone>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        padding: Option<Space>,
+        #[serde(default)]
+        children: Vec<Block>,
+    },
+    /// Children in equal columns, row by row.
+    Grid {
+        /// 1 to 6.
+        columns: u8,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        gap: Option<Space>,
         #[serde(default)]
         children: Vec<Block>,
     },
@@ -71,6 +84,9 @@ pub enum Block {
     /// A list row: a title, an optional second line, and an optional value at the end.
     Item {
         title: String,
+        /// An icon before the title.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        icon: Option<IconName>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         subtitle: Option<String>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -81,6 +97,9 @@ pub enum Block {
     Button {
         label: String,
         action: Action,
+        /// An icon before the label.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        icon: Option<IconName>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         style: Option<ButtonStyle>,
     },
@@ -98,6 +117,56 @@ pub enum Block {
         label: Option<String>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         tone: Option<Tone>,
+    },
+    /// A text input. The host keeps what is typed until the next frame.
+    Field {
+        #[serde(default)]
+        value: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        label: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        placeholder: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        kind: Option<FieldKind>,
+        /// Gets the text after every change.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        action: Option<Action>,
+        /// Gets the text when the user presses return.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        submit: Option<Action>,
+    },
+    /// One of a few options, side by side (a segmented control).
+    Choice {
+        /// 2 to 8 options.
+        options: Vec<String>,
+        /// One of the options.
+        value: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        label: Option<String>,
+        /// Gets the option picked.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        action: Option<Action>,
+    },
+    /// An icon from a fixed set, drawn by the host (SF Symbols on Apple platforms).
+    Icon {
+        name: IconName,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        tone: Option<Tone>,
+        /// Sized like text in this style.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        style: Option<TextStyle>,
+        /// What it means, for screen readers. Without it the icon is decoration.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        label: Option<String>,
+    },
+    /// A picture from an address the host allows.
+    Image {
+        src: String,
+        /// What it shows, for screen readers. Required.
+        alt: String,
+        /// Width divided by height, 0.25 to 4. Defaults to 16:9.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        aspect: Option<f64>,
     },
     /// A short label in a pill.
     Badge {
@@ -163,9 +232,11 @@ pub enum Justify {
     Between,
 }
 
+/// Text sizes, largest first. `display` is for a hero number or a headline.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum TextStyle {
+    Display,
     Title,
     Heading,
     Body,
@@ -186,6 +257,66 @@ pub enum Tone {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
+pub enum FieldKind {
+    Text,
+    Number,
+    Email,
+    Search,
+}
+
+/// The icons a view may name. Each host maps them to its own set.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum IconName {
+    Add,
+    Remove,
+    Close,
+    Check,
+    ChevronLeft,
+    ChevronRight,
+    Search,
+    Settings,
+    Info,
+    Warning,
+    Error,
+    Star,
+    Heart,
+    Bookmark,
+    Calendar,
+    Clock,
+    Location,
+    Person,
+    People,
+    Mail,
+    Phone,
+    Message,
+    Home,
+    Bell,
+    Sun,
+    Moon,
+    Cloud,
+    Rain,
+    Snow,
+    Wind,
+    Bolt,
+    Cart,
+    Gift,
+    Music,
+    Camera,
+    Photo,
+    Link,
+    Share,
+    Trash,
+    Edit,
+    Refresh,
+    Lock,
+    Flag,
+    Play,
+    Pause,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub enum ButtonStyle {
     Primary,
     Secondary,
@@ -199,6 +330,7 @@ impl Block {
             Block::Stack { children, .. }
             | Block::Row { children, .. }
             | Block::Card { children, .. }
+            | Block::Grid { children, .. }
             | Block::List { children } => children,
             _ => &[],
         }
@@ -209,6 +341,7 @@ impl Block {
             Block::Stack { children, .. }
             | Block::Row { children, .. }
             | Block::Card { children, .. }
+            | Block::Grid { children, .. }
             | Block::List { children } => Some(children),
             _ => None,
         }
@@ -221,6 +354,11 @@ impl Block {
             Block::Row { .. } => "row",
             Block::Text { .. } => "text",
             Block::Card { .. } => "card",
+            Block::Grid { .. } => "grid",
+            Block::Field { .. } => "field",
+            Block::Choice { .. } => "choice",
+            Block::Icon { .. } => "icon",
+            Block::Image { .. } => "image",
             Block::List { .. } => "list",
             Block::Item { .. } => "item",
             Block::Button { .. } => "button",

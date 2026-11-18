@@ -9,7 +9,7 @@ The same views two ways, switched at the top of the screen:
 # from the repository root
 brew install xcodegen
 scripts/build-xcframework.sh                      # the runtime for "On this iPhone"
-cargo run -p ulana-cli -- serve examples/views --block calendar --action send   # for "On a server"
+cargo run -p ulana-cli -- serve examples/views --block calendar --action send --image https://picsum.photos/   # for "On a server"
 cd examples/ios && xcodegen && open UlanaExample.xcodeproj
 ```
 

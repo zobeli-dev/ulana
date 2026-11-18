@@ -21,7 +21,7 @@ export type Snapshot = {
 export type Listed = { name: string; revision: number };
 
 /** What a model needs to write a view for this app. */
-export type HostInfo = { spec: string; blocks: string[]; actions: string[]; edit: boolean };
+export type HostInfo = { spec: string; blocks: string[]; actions: string[]; images?: string[]; edit: boolean };
 
 export type Source = { name: string; source: string; data: Json };
 

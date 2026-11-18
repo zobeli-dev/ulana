@@ -20,9 +20,18 @@ public enum Token {
     public enum Space: String, Codable, Sendable, CaseIterable { case none, xs, sm, md, lg, xl }
     public enum Align: String, Codable, Sendable, CaseIterable { case start, center, end, stretch }
     public enum Justify: String, Codable, Sendable, CaseIterable { case start, center, end, between }
-    public enum TextStyle: String, Codable, Sendable, CaseIterable { case title, heading, body, caption, mono }
+    public enum TextStyle: String, Codable, Sendable, CaseIterable { case display, title, heading, body, caption, mono }
     public enum Tone: String, Codable, Sendable, CaseIterable { case `default`, muted, accent, success, warning, danger }
     public enum ButtonStyle: String, Codable, Sendable, CaseIterable { case primary, secondary, plain }
+    public enum FieldKind: String, Codable, Sendable, CaseIterable { case text, number, email, search }
+    /// The icons a view may name. `systemName` maps each to an SF Symbol.
+    public enum Icon: String, Codable, Sendable, CaseIterable {
+        case add, remove, close, check
+        case chevronLeft = "chevron_left", chevronRight = "chevron_right"
+        case search, settings, info, warning, error, star, heart, bookmark, calendar, clock, location
+        case person, people, mail, phone, message, home, bell, sun, moon, cloud, rain, snow, wind, bolt
+        case cart, gift, music, camera, photo, link, share, trash, edit, refresh, lock, flag, play, pause
+    }
 }
 
 /// What a press or a change does.
@@ -104,11 +113,29 @@ public struct TextBlock: Codable, Sendable, Equatable {
 
 public struct CardBlock: Codable, Sendable, Equatable {
     public var title: String?
+    public var tone: Token.Tone?
+    public var padding: Token.Space?
     public var children: [Block]
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         title = try c.decodeIfPresent(String.self, forKey: .title)
+        tone = try c.decodeIfPresent(Token.Tone.self, forKey: .tone)
+        padding = try c.decodeIfPresent(Token.Space.self, forKey: .padding)
+        children = try c.decodeIfPresent([Block].self, forKey: .children) ?? []
+    }
+}
+
+/// Children in equal columns, row by row.
+public struct GridBlock: Codable, Sendable, Equatable {
+    public var columns: Int
+    public var gap: Token.Space?
+    public var children: [Block]
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        columns = try c.decode(Int.self, forKey: .columns)
+        gap = try c.decodeIfPresent(Token.Space.self, forKey: .gap)
         children = try c.decodeIfPresent([Block].self, forKey: .children) ?? []
     }
 }
@@ -124,6 +151,7 @@ public struct ListBlock: Codable, Sendable, Equatable {
 
 public struct ItemBlock: Codable, Sendable, Equatable {
     public var title: String
+    public var icon: Token.Icon?
     public var subtitle: String?
     public var trailing: String?
     public var action: Action?
@@ -132,6 +160,7 @@ public struct ItemBlock: Codable, Sendable, Equatable {
 public struct ButtonBlock: Codable, Sendable, Equatable {
     public var label: String
     public var action: Action
+    public var icon: Token.Icon?
     public var style: Token.ButtonStyle?
 }
 
@@ -139,6 +168,48 @@ public struct ToggleBlock: Codable, Sendable, Equatable {
     public var label: String
     public var value: Bool
     public var action: Action?
+}
+
+/// A text input. `action` gets the text after each change, `submit` when return is pressed.
+public struct FieldBlock: Codable, Sendable, Equatable {
+    public var value: String
+    public var label: String?
+    public var placeholder: String?
+    public var kind: Token.FieldKind?
+    public var action: Action?
+    public var submit: Action?
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        value = try c.decodeIfPresent(String.self, forKey: .value) ?? ""
+        label = try c.decodeIfPresent(String.self, forKey: .label)
+        placeholder = try c.decodeIfPresent(String.self, forKey: .placeholder)
+        kind = try c.decodeIfPresent(Token.FieldKind.self, forKey: .kind)
+        action = try c.decodeIfPresent(Action.self, forKey: .action)
+        submit = try c.decodeIfPresent(Action.self, forKey: .submit)
+    }
+}
+
+/// One of 2 to 8 options, side by side.
+public struct ChoiceBlock: Codable, Sendable, Equatable {
+    public var options: [String]
+    public var value: String
+    public var label: String?
+    public var action: Action?
+}
+
+public struct IconBlock: Codable, Sendable, Equatable {
+    public var name: Token.Icon
+    public var tone: Token.Tone?
+    public var style: Token.TextStyle?
+    public var label: String?
+}
+
+/// A picture from an address the host allows. `aspect` is width / height.
+public struct ImageBlock: Codable, Sendable, Equatable {
+    public var src: String
+    public var alt: String
+    public var aspect: Double?
 }
 
 public struct ProgressBlock: Codable, Sendable, Equatable {
@@ -173,10 +244,15 @@ public indirect enum Block: Codable, Sendable, Equatable {
     case row(RowBlock)
     case text(TextBlock)
     case card(CardBlock)
+    case grid(GridBlock)
     case list(ListBlock)
     case item(ItemBlock)
     case button(ButtonBlock)
     case toggle(ToggleBlock)
+    case field(FieldBlock)
+    case choice(ChoiceBlock)
+    case icon(IconBlock)
+    case image(ImageBlock)
     case progress(ProgressBlock)
     case badge(BadgeBlock)
     case divider
@@ -194,6 +270,11 @@ public indirect enum Block: Codable, Sendable, Equatable {
         case "row": self = .row(try RowBlock(from: decoder))
         case "text": self = .text(try TextBlock(from: decoder))
         case "card": self = .card(try CardBlock(from: decoder))
+        case "grid": self = .grid(try GridBlock(from: decoder))
+        case "field": self = .field(try FieldBlock(from: decoder))
+        case "choice": self = .choice(try ChoiceBlock(from: decoder))
+        case "icon": self = .icon(try IconBlock(from: decoder))
+        case "image": self = .image(try ImageBlock(from: decoder))
         case "list": self = .list(try ListBlock(from: decoder))
         case "item": self = .item(try ItemBlock(from: decoder))
         case "button": self = .button(try ButtonBlock(from: decoder))
@@ -215,6 +296,11 @@ public indirect enum Block: Codable, Sendable, Equatable {
         case .row(let b): try b.encode(to: encoder)
         case .text(let b): try b.encode(to: encoder)
         case .card(let b): try b.encode(to: encoder)
+        case .grid(let b): try b.encode(to: encoder)
+        case .field(let b): try b.encode(to: encoder)
+        case .choice(let b): try b.encode(to: encoder)
+        case .icon(let b): try b.encode(to: encoder)
+        case .image(let b): try b.encode(to: encoder)
         case .list(let b): try b.encode(to: encoder)
         case .item(let b): try b.encode(to: encoder)
         case .button(let b): try b.encode(to: encoder)
@@ -234,6 +320,11 @@ public indirect enum Block: Codable, Sendable, Equatable {
         case .row: "row"
         case .text: "text"
         case .card: "card"
+        case .grid: "grid"
+        case .field: "field"
+        case .choice: "choice"
+        case .icon: "icon"
+        case .image: "image"
         case .list: "list"
         case .item: "item"
         case .button: "button"
@@ -253,6 +344,7 @@ public indirect enum Block: Codable, Sendable, Equatable {
         case .stack(let b): b.children
         case .row(let b): b.children
         case .card(let b): b.children
+        case .grid(let b): b.children
         case .list(let b): b.children
         default: []
         }

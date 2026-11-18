@@ -74,7 +74,7 @@ private struct Schema {
         let back = try JSONSerialization.jsonObject(with: JSONEncoder().encode(block)) as! [String: Any]
         #expect(Set(back.keys) == Set(object.keys), "\(type): Swift keeps \(back.keys.sorted()), the schema has \(object.keys.sorted())")
     }
-    #expect(seen.count == 13)
+    #expect(seen.count == 18)
 }
 
 @Test func everyActionKeepsEveryField() throws {
@@ -99,4 +99,6 @@ private struct Schema {
     #expect(values("TextStyle") == Set(Token.TextStyle.allCases.map(\.rawValue)))
     #expect(values("Tone") == Set(Token.Tone.allCases.map(\.rawValue)))
     #expect(values("ButtonStyle") == Set(Token.ButtonStyle.allCases.map(\.rawValue)))
+    #expect(values("FieldKind") == Set(Token.FieldKind.allCases.map(\.rawValue)))
+    #expect(values("IconName") == Set(Token.Icon.allCases.map(\.rawValue)))
 }

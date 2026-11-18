@@ -75,3 +75,48 @@ test("the theme reaches the blocks", () => {
   expect(html.toLowerCase()).toContain("rgba(194,65,12,1.00)");
   expect(theme.tones.muted).toEqual(defaultTheme.tones.muted);
 });
+
+test("the new blocks draw", () => {
+  const frame: Frame = {
+    version: 1,
+    root: {
+      type: "grid",
+      columns: 2,
+      children: [
+        { type: "text", text: "21°", style: "display" },
+        { type: "field", value: "Lisbon", label: "City", placeholder: "Type a city", kind: "search", action: { kind: "event", id: "h1" } },
+        { type: "choice", options: ["°C", "°F"], value: "°F", label: "Unit", action: { kind: "event", id: "h2" } },
+        { type: "icon", name: "sun", tone: "warning", style: "title", label: "Sunny" },
+        { type: "image", src: "https://picsum.photos/seed/x/800/450", alt: "A street in Lisbon", aspect: 2 },
+        { type: "card", tone: "success", padding: "lg", children: [{ type: "text", text: "All good" }] },
+        { type: "item", title: "Inbox", icon: "mail" },
+        { type: "button", label: "Add", icon: "add", action: { kind: "event", id: "h3" } },
+      ],
+    },
+  };
+  const html = draw(frame);
+  expect(html).toContain("font-size:44px");
+  expect(html).toContain('value="Lisbon"');
+  expect(html).toContain('placeholder="Type a city"');
+  expect(html).toContain('role="radiogroup"');
+  expect(html).toMatch(/aria-checked="true"[^>]*aria-label="°F"|aria-label="°F"[^>]*aria-checked="true"/);
+  expect(html).toContain('aria-label="Sunny"');
+  expect(html).toContain("☀");
+  expect(html).toContain("aspect-ratio:2");
+  expect(html).toContain('aria-label="A street in Lisbon"');
+  expect(html).toContain("background-color:rgba(220,252,231,1.00)");
+  expect(html).toContain("✉");
+  expect(html).toContain("width:50%");
+  expect(html).not.toContain("cannot show");
+});
+
+test("an app can draw its own icons", () => {
+  const html = renderToStaticMarkup(
+    <UlanaView
+      frame={{ version: 1, root: { type: "icon", name: "star" } }}
+      icons={({ name, size }) => <span data-icon={name} data-size={size} />}
+    />,
+  );
+  expect(html).toContain('data-icon="star"');
+  expect(html).toContain('data-size="22"');
+});

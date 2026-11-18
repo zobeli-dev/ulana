@@ -326,3 +326,67 @@ fn print_goes_to_the_log() {
     assert_eq!(v.take_logs(), ["loaded\t1\ttrue", "render"]);
     assert!(v.take_logs().is_empty());
 }
+
+#[test]
+fn the_new_blocks_build_from_luau() {
+    let mut v = View::new(
+        r#"
+        return function()
+            local city = ui.state("city", "Lisbon")
+            local unit = ui.state("unit", "°C")
+            return ui.grid{ columns = 2, gap = "md",
+                ui.field{ "City", value = city:get(), placeholder = "Type a city", kind = "search",
+                    on_change = function(t) city:set(t) end,
+                    on_submit = function(t) city:set(string.upper(t)) end },
+                ui.choice{ "°C", "°F", value = unit:get(), on_change = function(u) unit:set(u) end },
+                ui.icon{ "sun", tone = "warning", style = "display", label = "Sunny" },
+                ui.image{ src = "https://picsum.photos/seed/" .. city:get() .. "/800/450", alt = city:get(), aspect = 16 / 9 },
+                ui.card{ tone = "accent", padding = "lg", ui.text{ "21°", style = "display" } },
+                ui.item{ "Inbox", icon = "mail", trailing = "3" },
+                ui.button{ "Add", icon = "add", on_press = function() end },
+            }
+        end
+    "#,
+        Host::new().image("https://picsum.photos/"),
+        Limits::default(),
+    )
+    .unwrap();
+    let f = v.render(&Value::Null).unwrap();
+    let json = serde_json::to_value(&f).unwrap();
+    let kids = &json["root"]["children"];
+    assert_eq!(json["root"]["type"], "grid");
+    assert_eq!(
+        kids[0],
+        json!({ "type": "field", "value": "Lisbon", "label": "City", "placeholder": "Type a city", "kind": "search",
+        "action": { "kind": "event", "id": "h1" }, "submit": { "kind": "event", "id": "h2" } })
+    );
+    assert_eq!(kids[1]["options"], json!(["°C", "°F"]));
+    assert_eq!(
+        kids[2],
+        json!({ "type": "icon", "name": "sun", "tone": "warning", "style": "display", "label": "Sunny" })
+    );
+    assert_eq!(kids[3]["src"], "https://picsum.photos/seed/Lisbon/800/450");
+    assert_eq!(kids[4]["tone"], "accent");
+    assert_eq!(kids[5]["icon"], "mail");
+    assert_eq!(kids[6]["icon"], "add");
+
+    v.event(f.version, "h1", &json!("Porto")).unwrap();
+    let f = v.render(&Value::Null).unwrap();
+    v.event(f.version, "h3", &json!("°F")).unwrap();
+    let f = v.render(&Value::Null).unwrap();
+    v.event(f.version, "h2", &json!("faro")).unwrap();
+    assert_eq!(v.state()["city"], json!("FARO"));
+    assert_eq!(v.state()["unit"], json!("°F"));
+
+    // Without the host allowing it, the image is refused with its path.
+    let mut bare = View::new(
+        r#"return ui.image{ src = "https://picsum.photos/1", alt = "x" }"#,
+        Host::new(),
+        Limits::default(),
+    )
+    .unwrap();
+    assert_eq!(
+        bare.render(&Value::Null).unwrap_err().to_string(),
+        "at root.src: this app shows no images"
+    );
+}

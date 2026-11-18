@@ -11,6 +11,7 @@ use crate::error::{Error, Result};
 pub struct Host {
     blocks: BTreeSet<String>,
     actions: BTreeSet<String>,
+    images: BTreeSet<String>,
 }
 
 impl Host {
@@ -28,6 +29,17 @@ impl Host {
     pub fn action(mut self, name: impl Into<String>) -> Self {
         self.actions.insert(name.into());
         self
+    }
+
+    /// Show images whose address starts with this, such as
+    /// `https://images.example.com/`. Without any, `image` blocks are refused.
+    pub fn image(mut self, prefix: impl Into<String>) -> Self {
+        self.images.insert(prefix.into());
+        self
+    }
+
+    pub fn images(&self) -> impl Iterator<Item = &str> {
+        self.images.iter().map(String::as_str)
     }
 
     pub fn blocks(&self) -> impl Iterator<Item = &str> {
@@ -188,6 +200,7 @@ impl Checker<'_> {
                 subtitle,
                 trailing,
                 action,
+                ..
             } => {
                 required(title, &join(path, "title"))?;
                 cut(title, text);
@@ -227,6 +240,96 @@ impl Checker<'_> {
             Block::Badge { text: t, .. } => {
                 required(t, &join(path, "text"))?;
                 cut(t, text);
+            }
+            Block::Grid { columns, .. } => {
+                if !(1..=6).contains(columns) {
+                    return Err(Error::invalid(
+                        join(path, "columns"),
+                        "columns must be 1 to 6",
+                    ));
+                }
+            }
+            Block::Field {
+                value,
+                label,
+                placeholder,
+                action,
+                submit,
+                ..
+            } => {
+                cut(value, text);
+                for t in [label, placeholder].into_iter().flatten() {
+                    cut(t, text);
+                }
+                if let Some(a) = action {
+                    self.action(a, &join(path, "action"))?;
+                }
+                if let Some(a) = submit {
+                    self.action(a, &join(path, "submit"))?;
+                }
+            }
+            Block::Choice {
+                options,
+                value,
+                label,
+                action,
+            } => {
+                if !(2..=8).contains(&options.len()) {
+                    return Err(Error::invalid(
+                        join(path, "options"),
+                        "a choice has 2 to 8 options",
+                    ));
+                }
+                for (i, option) in options.iter_mut().enumerate() {
+                    required(option, &format!("{path}.options[{i}]"))?;
+                    cut(option, 80);
+                }
+                if !options.contains(value) {
+                    return Err(Error::invalid(
+                        join(path, "value"),
+                        format!("value must be one of the options, not `{value}`"),
+                    ));
+                }
+                if let Some(l) = label {
+                    cut(l, text);
+                }
+                if let Some(a) = action {
+                    self.action(a, &join(path, "action"))?;
+                }
+            }
+            Block::Icon { label, .. } => {
+                if let Some(l) = label {
+                    cut(l, text);
+                }
+            }
+            Block::Image { src, alt, aspect } => {
+                required(alt, &join(path, "alt"))?;
+                cut(alt, text);
+                if !self.host.images.iter().any(|p| src.starts_with(p.as_str())) {
+                    return Err(Error::invalid(
+                        join(path, "src"),
+                        if self.host.images.is_empty() {
+                            "this app shows no images".to_string()
+                        } else {
+                            format!(
+                                "this app only shows images from {}",
+                                self.host
+                                    .images()
+                                    .map(|p| format!("`{p}`"))
+                                    .collect::<Vec<_>>()
+                                    .join(", ")
+                            )
+                        },
+                    ));
+                }
+                if let Some(a) = aspect {
+                    if !a.is_finite() || *a < 0.25 || *a > 4.0 {
+                        return Err(Error::invalid(
+                            join(path, "aspect"),
+                            "aspect must be from 0.25 to 4",
+                        ));
+                    }
+                }
             }
             Block::Custom { name, props } => {
                 if !self.host.blocks.contains(name.as_str()) {
@@ -469,6 +572,74 @@ mod tests {
             .unwrap_err()
             .to_string()
             .contains("bytes"));
+    }
+
+    #[test]
+    fn new_blocks_are_checked() {
+        let l = Limits::default();
+        let pics = Host::new().image("https://picsum.photos/");
+        let ok = parse(
+            json!({ "type": "grid", "columns": 2, "children": [
+                { "type": "field", "value": "Lisbon", "placeholder": "City", "kind": "search" },
+                { "type": "choice", "options": ["°C", "°F"], "value": "°C" },
+                { "type": "icon", "name": "sun", "tone": "warning", "style": "display" },
+                { "type": "image", "src": "https://picsum.photos/seed/lisbon/800/450", "alt": "Lisbon", "aspect": 1.78 },
+                { "type": "card", "tone": "accent", "padding": "lg", "children": [] },
+                { "type": "item", "title": "Mail", "icon": "mail" },
+                { "type": "button", "label": "Add", "icon": "add", "action": { "kind": "host", "name": "send" } }
+            ]}),
+            &pics.clone().action("send"),
+            &l,
+        );
+        assert!(ok.is_ok(), "{ok:?}");
+
+        for (bad, says) in [
+            (
+                json!({ "type": "grid", "columns": 0 }),
+                "columns must be 1 to 6",
+            ),
+            (
+                json!({ "type": "grid", "columns": 7 }),
+                "columns must be 1 to 6",
+            ),
+            (
+                json!({ "type": "choice", "options": ["a"], "value": "a" }),
+                "2 to 8 options",
+            ),
+            (
+                json!({ "type": "choice", "options": ["a", "b"], "value": "c" }),
+                "one of the options",
+            ),
+            (
+                json!({ "type": "choice", "options": ["a", " "], "value": "a" }),
+                "must not be empty",
+            ),
+            (json!({ "type": "icon", "name": "unicorn" }), "unicorn"),
+            (
+                json!({ "type": "image", "src": "https://evil.example/x.png", "alt": "x" }),
+                "only shows images from `https://picsum.photos/`",
+            ),
+            (
+                json!({ "type": "image", "src": "https://picsum.photos/1", "alt": "" }),
+                "must not be empty",
+            ),
+            (
+                json!({ "type": "image", "src": "https://picsum.photos/1", "alt": "x", "aspect": 9 }),
+                "0.25 to 4",
+            ),
+            (json!({ "type": "field", "kind": "password" }), "password"),
+        ] {
+            let err = parse(bad.clone(), &pics, &l).unwrap_err().to_string();
+            assert!(err.contains(says), "{bad}: {err}");
+        }
+        let err = parse(
+            json!({ "type": "image", "src": "https://picsum.photos/1", "alt": "x" }),
+            &host(),
+            &l,
+        )
+        .unwrap_err()
+        .to_string();
+        assert!(err.contains("shows no images"), "{err}");
     }
 
     #[test]

@@ -223,7 +223,7 @@
         },
         {
           "additionalProperties": false,
-          "description": "A surface with an optional title.",
+          "description": "A surface with an optional title. A tone tints it.",
           "properties": {
             "children": {
               "default": [],
@@ -232,10 +232,30 @@
               },
               "type": "array"
             },
+            "padding": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Space"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
             "title": {
               "type": [
                 "string",
                 "null"
+              ]
+            },
+            "tone": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Tone"
+                },
+                {
+                  "type": "null"
+                }
               ]
             },
             "type": {
@@ -245,6 +265,45 @@
           },
           "required": [
             "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Children in equal columns, row by row.",
+          "properties": {
+            "children": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/Block"
+              },
+              "type": "array"
+            },
+            "columns": {
+              "description": "1 to 6.",
+              "format": "uint8",
+              "maximum": 255,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "gap": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Space"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": {
+              "const": "grid",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "columns"
           ],
           "type": "object"
         },
@@ -283,6 +342,17 @@
                 }
               ]
             },
+            "icon": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/IconName"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "An icon before the title."
+            },
             "subtitle": {
               "type": [
                 "string",
@@ -314,6 +384,17 @@
           "properties": {
             "action": {
               "$ref": "#/$defs/Action"
+            },
+            "icon": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/IconName"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "An icon before the label."
             },
             "label": {
               "type": "string"
@@ -404,6 +485,189 @@
           "required": [
             "type",
             "value"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "A text input. The host keeps what is typed until the next frame.",
+          "properties": {
+            "action": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Action"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Gets the text after every change."
+            },
+            "kind": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/FieldKind"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "label": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "placeholder": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "submit": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Action"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Gets the text when the user presses return."
+            },
+            "type": {
+              "const": "field",
+              "type": "string"
+            },
+            "value": {
+              "default": "",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "One of a few options, side by side (a segmented control).",
+          "properties": {
+            "action": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Action"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Gets the option picked."
+            },
+            "label": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "options": {
+              "description": "2 to 8 options.",
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": {
+              "const": "choice",
+              "type": "string"
+            },
+            "value": {
+              "description": "One of the options.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "options",
+            "value"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "An icon from a fixed set, drawn by the host (SF Symbols on Apple platforms).",
+          "properties": {
+            "label": {
+              "description": "What it means, for screen readers. Without it the icon is decoration.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "name": {
+              "$ref": "#/$defs/IconName"
+            },
+            "style": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/TextStyle"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Sized like text in this style."
+            },
+            "tone": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Tone"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": {
+              "const": "icon",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "name"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "A picture from an address the host allows.",
+          "properties": {
+            "alt": {
+              "description": "What it shows, for screen readers. Required.",
+              "type": "string"
+            },
+            "aspect": {
+              "description": "Width divided by height, 0.25 to 4. Defaults to 16:9.",
+              "format": "double",
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "src": {
+              "type": "string"
+            },
+            "type": {
+              "const": "image",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "src",
+            "alt"
           ],
           "type": "object"
         },
@@ -503,6 +767,66 @@
       ],
       "type": "string"
     },
+    "FieldKind": {
+      "enum": [
+        "text",
+        "number",
+        "email",
+        "search"
+      ],
+      "type": "string"
+    },
+    "IconName": {
+      "description": "The icons a view may name. Each host maps them to its own set.",
+      "enum": [
+        "add",
+        "remove",
+        "close",
+        "check",
+        "chevron_left",
+        "chevron_right",
+        "search",
+        "settings",
+        "info",
+        "warning",
+        "error",
+        "star",
+        "heart",
+        "bookmark",
+        "calendar",
+        "clock",
+        "location",
+        "person",
+        "people",
+        "mail",
+        "phone",
+        "message",
+        "home",
+        "bell",
+        "sun",
+        "moon",
+        "cloud",
+        "rain",
+        "snow",
+        "wind",
+        "bolt",
+        "cart",
+        "gift",
+        "music",
+        "camera",
+        "photo",
+        "link",
+        "share",
+        "trash",
+        "edit",
+        "refresh",
+        "lock",
+        "flag",
+        "play",
+        "pause"
+      ],
+      "type": "string"
+    },
     "Justify": {
       "enum": [
         "start",
@@ -525,7 +849,9 @@
       "type": "string"
     },
     "TextStyle": {
+      "description": "Text sizes, largest first. `display` is for a hero number or a headline.",
       "enum": [
+        "display",
         "title",
         "heading",
         "body",

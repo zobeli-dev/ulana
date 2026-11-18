@@ -13,7 +13,7 @@
 
 typedef struct UlanaView UlanaView;
 
-// Load a script. `host_json` is {"blocks": [...], "actions": [...]};
+// Load a script. `host_json` is {"blocks": [...], "actions": [...], "images": [...]};
 // `state_json` is the state saved earlier, or NULL. On failure returns NULL
 // and, when `error_out` is not NULL, sets it to an error envelope to free.
 UlanaView *ulana_view_new(const char *source, const char *host_json, const char *state_json, char **error_out);

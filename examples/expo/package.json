@@ -12,6 +12,7 @@
     "test": "bun test"
   },
   "dependencies": {
+    "@expo/vector-icons": "^15.0.2",
     "@zobeli/ulana-react-native": "workspace:*",
     "expo": "~57.0.29",
     "expo-secure-store": "~57.0.4",

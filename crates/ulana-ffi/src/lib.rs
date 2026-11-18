@@ -19,6 +19,8 @@ struct HostSpec {
     blocks: Vec<String>,
     #[serde(default)]
     actions: Vec<String>,
+    #[serde(default)]
+    images: Vec<String>,
 }
 
 fn kind(e: &Error) -> &'static str {
@@ -96,6 +98,9 @@ pub unsafe extern "C" fn ulana_view_new(
         }
         for a in spec.actions {
             host = host.action(a);
+        }
+        for i in spec.images {
+            host = host.image(i);
         }
         View::with_state(source, host, Limits::default(), state)
             .map(UlanaView)
