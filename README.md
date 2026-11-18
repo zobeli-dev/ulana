@@ -21,7 +21,7 @@ Status: **0.1, early.** The API will change.
 Apps that let a model change their interface usually pick one of two paths. JSON layouts are safe but cannot hold logic: no state, no filters, no "tick this off". Web views can do anything, including look like your app's own approval screen. Ulana sits between them:
 
 - **Real logic, in a sandbox.** Luau was built to run untrusted code. Views get no network, no files, no `require`, read-only libraries, and limits on memory and time. A view that loops forever or allocates without end stops with an error, and the app keeps running.
-- **Native, not a web view.** The output is a small set of blocks (`stack`, `row`, `text`, `card`, `list`, `item`, `button`, `toggle`, `progress`, `badge`, `divider`, `spacer`) plus the host's own `custom` blocks. Your app draws them with its components and its theme.
+- **Native, not a web view.** The output is a small set of blocks (`stack`, `row`, `grid`, `card`, `list`, `item`, `text`, `icon`, `image`, `button`, `toggle`, `field`, `choice`, `progress`, `badge`, `divider`, `spacer`) plus the host's own `custom` blocks. Your app draws them with its components and its theme.
 - **Checked before drawn.** Every tree goes through the same Rust checker, whether it came from a script or from JSON. Unknown fields, unknown custom blocks, and unknown host actions are refused with the path, so a model can fix its own mistake.
 - **The host stays in charge.** A view can only ask the host to do the things the host named (`ui.host("send", …)`). The host decides what happens, including asking the user first.
 - **Made for models to write.** [`spec/ulana.md`](spec/ulana.md) is the whole API on one page, written to go into a prompt.
@@ -92,7 +92,7 @@ Ask a model to change the screen, or save a file by hand: either way the app cha
 
 ```sh
 bun install
-cargo run -p ulana-cli -- serve examples/views --edit --block calendar --action send
+cargo run -p ulana-cli -- serve examples/views --edit --block calendar --action send --image https://picsum.photos/
 # in another terminal
 cd examples/expo && cp .env.example .env && bun run web      # or: bun run ios, bun run android
 ```

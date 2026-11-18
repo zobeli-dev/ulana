@@ -4,7 +4,7 @@ import { afterEach, expect, test } from "bun:test";
 
 import { changeView } from "../src/ai";
 
-const host = { spec: "SPEC", blocks: ["calendar"], actions: ["send"], edit: true };
+const host = { spec: "SPEC", blocks: ["calendar"], actions: ["send"], images: ["https://picsum.photos/"], edit: true };
 const real = globalThis.fetch;
 afterEach(() => {
   globalThis.fetch = real;
@@ -69,6 +69,7 @@ test("a failing script goes back to the model with its error, and the fix is kep
   expect(first.messages[0].content).toContain("SPEC");
   expect(first.messages[0].content).toContain('ui.custom("calendar", props)');
   expect(first.messages[0].content).toContain("accent #2563EB");
+  expect(first.messages[0].content).toContain('addresses starting with "https://picsum.photos/"');
   expect(first.messages[1]).toEqual({ role: "user", content: "earlier" });
   expect(first.messages[2].content).toContain("return ui.text('old')");
   expect(first.messages[2].content).toContain('"n": 1');

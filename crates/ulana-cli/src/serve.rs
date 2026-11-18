@@ -64,6 +64,8 @@ struct HostInfo<'a> {
     spec: &'a str,
     blocks: Vec<&'a str>,
     actions: Vec<&'a str>,
+    /// Image addresses must start with one of these.
+    images: Vec<&'a str>,
     edit: bool,
 }
 
@@ -216,6 +218,7 @@ impl Served {
                     spec: SPEC,
                     blocks: self.host.blocks().collect(),
                     actions: self.host.actions().collect(),
+                    images: self.host.images().collect(),
                     edit: self.edit,
                 };
                 respond(request, 200, Some(json(&info)));

@@ -1,5 +1,6 @@
-export { UlanaView } from "./UlanaView";
-export type { CustomBlockProps, UlanaViewProps } from "./UlanaView";
+export { UlanaView, glyphIcons } from "./UlanaView";
+export type { CustomBlockProps, IconRenderer, UlanaViewProps } from "./UlanaView";
+export { ICON_NAMES } from "./types";
 export { defaultTheme, makeTheme } from "./theme";
 export type { Theme, ToneColors } from "./theme";
 export { isFrame } from "./frame";

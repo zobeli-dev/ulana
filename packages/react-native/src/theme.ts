@@ -43,6 +43,7 @@ export const defaultTheme: Theme = {
   space: { none: 0, xs: 4, sm: 8, md: 16, lg: 24, xl: 32 },
   radius: { card: 14, control: 10, pill: 999 },
   text: {
+    display: { fontSize: 44, lineHeight: 50, fontWeight: "700" },
     title: { fontSize: 28, lineHeight: 34, fontWeight: "600" },
     heading: { fontSize: 20, lineHeight: 26, fontWeight: "600" },
     body: { fontSize: 16, lineHeight: 22, fontWeight: "400" },

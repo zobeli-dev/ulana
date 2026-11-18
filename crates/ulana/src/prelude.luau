@@ -142,6 +142,11 @@ function ui.list(p)
 	return container("list", p)
 end
 
+-- Equal columns: `ui.grid{ columns = 2, a, b, c, d }`.
+function ui.grid(p)
+	return container("grid", p)
+end
+
 function ui.text(p)
 	return labeled("text", "text", p)
 end
@@ -172,6 +177,66 @@ function ui.progress(p)
 		block.value = p[1]
 	end
 	return block
+end
+
+-- A text input. The first positional entry is its label.
+-- `on_change` gets the text after every change, `on_submit` when return is pressed.
+function ui.field(p)
+	p = props_of("field", p)
+	local block = named("field", p, { on_change = true, on_submit = true })
+	if block.label == nil and p[1] ~= nil then
+		block.label = tostring(p[1])
+	end
+	if block.value == nil then
+		block.value = ""
+	elseif type(block.value) == "number" then
+		block.value = tostring(block.value)
+	end
+	if p.on_change ~= nil then
+		block.action = event(p.on_change, "on_change")
+	end
+	if p.on_submit ~= nil then
+		block.submit = event(p.on_submit, "on_submit")
+	end
+	return block
+end
+
+-- One of a few options: `ui.choice{ "Day", "Week", value = "Day", on_change = fn }`.
+-- The options are the positional entries, or `options = { ... }`.
+function ui.choice(p)
+	p = props_of("choice", p)
+	local block = named("choice", p, { on_change = true })
+	if block.options == nil then
+		local options = {}
+		for i = 1, last_index(p) do
+			if p[i] ~= nil then
+				table.insert(options, tostring(p[i]))
+			end
+		end
+		block.options = options
+	end
+	if type(block.value) == "number" then
+		block.value = tostring(block.value)
+	end
+	if p.on_change ~= nil then
+		block.action = event(p.on_change, "on_change")
+	end
+	return block
+end
+
+-- An icon from the fixed set: `ui.icon("star")` or `ui.icon{ "sun", tone = "warning", style = "title" }`.
+function ui.icon(p)
+	p = props_of("icon", p)
+	local block = named("icon", p)
+	if block.name == nil then
+		block.name = p[1]
+	end
+	return block
+end
+
+-- A picture from an address the app allows: `ui.image{ src = "...", alt = "..." }`.
+function ui.image(p)
+	return named("image", props_of("image", p))
 end
 
 function ui.divider()

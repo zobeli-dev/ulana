@@ -117,6 +117,7 @@ Rules:
 
 ${palette ? `In this app the tones look like this: ${palette}. When the user names a colour, use the tone closest to it.\n` : ""}Custom blocks this app has: ${blocks}.
 Host actions this app has: ${actions}.
+Images this app shows: ${host.images?.length ? `addresses starting with ${host.images.map((i) => `"${i}"`).join(" or ")}` : "none; leave images out"}.
 
 The API:
 

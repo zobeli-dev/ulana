@@ -33,7 +33,8 @@ schema  prints the JSON Schema of a frame.
 
 options:
   --block <name>    accept custom blocks with this name (repeatable)
-  --action <name>   accept host actions with this name (repeatable)";
+  --action <name>   accept host actions with this name (repeatable)
+  --image <prefix>  show images whose address starts with this (repeatable)";
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -67,6 +68,7 @@ fn run(args: &[String]) -> Result<String, String> {
         match arg.as_str() {
             "--block" => host = host.block(value()?),
             "--action" => host = host.action(value()?),
+            "--image" => host = host.image(value()?),
             "--data" => data = json_file(&value()?)?,
             "--event" => events.push(value()?),
             "--bind" => bind = value()?,

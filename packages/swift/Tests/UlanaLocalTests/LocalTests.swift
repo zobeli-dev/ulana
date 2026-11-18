@@ -93,7 +93,8 @@ private func firstText(_ frame: Frame) -> String? {
 @Test func theExampleViewsRunOnTheDevice() throws {
     let views = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
         .appending(path: "../../../../examples/views").standardized
-    for name in ["counter", "todo", "agenda"] {
+    let host = HostSpec(blocks: ["calendar"], actions: ["send"], images: ["https://picsum.photos/"])
+    for name in ["counter", "todo", "agenda", "weather"] {
         let source = try String(contentsOf: views.appending(path: "\(name).luau"), encoding: .utf8)
         let dataURL = views.appending(path: "\(name).json")
         let data = try JSONValue.parse(try? String(contentsOf: dataURL, encoding: .utf8))
@@ -101,4 +102,43 @@ private func firstText(_ frame: Frame) -> String? {
         #expect(session.error == nil, "\(name): \(session.error ?? "")")
         #expect(session.frame != nil, "\(name) did not render")
     }
+}
+
+@MainActor
+@Test func theNewBlocksRunOnTheDevice() throws {
+    let source = """
+    return function()
+        local city = ui.state("city", "Lisbon")
+        local unit = ui.state("unit", "°C")
+        return ui.grid{ columns = 2,
+            ui.field{ "City", value = city:get(), on_submit = function(t) city:set(t) end },
+            ui.choice{ "°C", "°F", value = unit:get(), on_change = function(u) unit:set(u) end },
+            ui.icon{ "sun", tone = "warning" },
+            ui.image{ src = "https://picsum.photos/seed/" .. city:get() .. "/400/300", alt = city:get() },
+        }
+    end
+    """
+    let session = LocalSession(source: source, host: HostSpec(images: ["https://picsum.photos/"]))
+    #expect(session.error == nil, "\(session.error ?? "")")
+    guard case .grid(let grid) = session.frame?.root, case .field(let field) = grid.children[0],
+          case .choice(let choice) = grid.children[1], case .icon(let icon) = grid.children[2],
+          case .image(let image) = grid.children[3]
+    else { Issue.record("unexpected tree"); return }
+    #expect(grid.columns == 2)
+    #expect(field.label == "City")
+    #expect(choice.options == ["°C", "°F"])
+    #expect(icon.name == .sun && icon.name.systemName == "sun.max.fill")
+    #expect(image.alt == "Lisbon")
+
+    guard case .event(let submit) = field.submit, case .event(let change) = choice.action else {
+        Issue.record("no handlers"); return
+    }
+    session.send(version: session.frame!.version, id: submit, value: .string("Porto"))
+    session.send(version: session.frame!.version, id: change, value: .string("°F"))
+    #expect(session.state == ["city": .string("Porto"), "unit": .string("°F")])
+    guard case .grid(let after) = session.frame?.root, case .image(let moved) = after.children[3] else { return }
+    #expect(moved.src == "https://picsum.photos/seed/Porto/400/300")
+
+    let refused = LocalSession(source: source)
+    #expect(refused.error == "at root.children[3].src: this app shows no images")
 }

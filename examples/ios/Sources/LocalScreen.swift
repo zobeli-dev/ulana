@@ -16,8 +16,9 @@ final class Library {
     private var data: [String: JSONValue] = [:]
     private var sessions: [String: LocalSession] = [:]
     private let defaults = UserDefaults.standard
-    /// What this app accepts beyond the built-in blocks, the same as `ulana serve --block calendar --action send`.
-    private let host = HostSpec(blocks: ["calendar"], actions: ["send"])
+    /// What this app accepts beyond the built-in blocks, the same as
+    /// `ulana serve --block calendar --action send --image https://picsum.photos/`.
+    private let host = HostSpec(blocks: ["calendar"], actions: ["send"], images: ["https://picsum.photos/"])
 
     init() {
         guard let folder = Bundle.main.url(forResource: "views", withExtension: nil),

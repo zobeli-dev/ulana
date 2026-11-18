@@ -36,7 +36,9 @@ mod convert;
 mod error;
 mod runtime;
 
-pub use block::{Action, Align, Block, ButtonStyle, Frame, Justify, Space, TextStyle, Tone};
+pub use block::{
+    Action, Align, Block, ButtonStyle, FieldKind, Frame, IconName, Justify, Space, TextStyle, Tone,
+};
 pub use check::{parse, Host, Limits};
 pub use error::{Error, Result};
 pub use runtime::{State, View};

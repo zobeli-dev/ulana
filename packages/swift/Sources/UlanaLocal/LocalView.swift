@@ -18,10 +18,13 @@ public struct HostSpec: Codable, Sendable, Equatable {
     public var blocks: [String]
     /// Names a view may give `ui.host`, such as `send`.
     public var actions: [String]
+    /// Image addresses must start with one of these, such as `https://images.example.com/`.
+    public var images: [String]
 
-    public init(blocks: [String] = [], actions: [String] = []) {
+    public init(blocks: [String] = [], actions: [String] = [], images: [String] = []) {
         self.blocks = blocks
         self.actions = actions
+        self.images = images
     }
 }
 

@@ -30,7 +30,7 @@ struct ServerScreen: View {
                 if let offline = session.offline {
                     Banner(
                         title: "Cannot reach the server",
-                        text: "\(offline)\n\nStart it with:\ncargo run -p ulana-cli -- serve examples/views --block calendar --action send",
+                        text: "\(offline)\n\nStart it with:\ncargo run -p ulana-cli -- serve examples/views --block calendar --action send --image https://picsum.photos/",
                         tint: .orange
                     )
                     .padding(.horizontal)

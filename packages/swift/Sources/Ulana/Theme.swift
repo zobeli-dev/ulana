@@ -29,6 +29,7 @@ public struct UlanaTheme: Sendable {
         border: Color = Color.secondary.opacity(0.25),
         tones: [Token.Tone: ToneColors] = UlanaTheme.systemTones,
         space: [Token.Space: CGFloat] = [.none: 0, .xs: 4, .sm: 8, .md: 16, .lg: 24, .xl: 32],
+        // Without `.display`, display text is 52 pt rounded bold, grown with Dynamic Type.
         fonts: [Token.TextStyle: Font] = [
             .title: .largeTitle.bold(),
             .heading: .title3.weight(.semibold),

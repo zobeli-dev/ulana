@@ -4,7 +4,8 @@
 import { expect, test } from "bun:test";
 
 import schema from "../../../spec/frame.schema.json";
-import type { Action, Align, Block, ButtonStyle, Justify, Space, TextStyle, Tone } from "../src/types";
+import { ICON_NAMES } from "../src/types";
+import type { Action, Align, Block, ButtonStyle, FieldKind, IconName, Justify, Space, TextStyle, Tone } from "../src/types";
 
 type Kind = Block["type"];
 type KeysOf<K extends Kind> = keyof Extract<Block, { type: K }>;
@@ -14,10 +15,15 @@ const fields = {
   stack: ["type", "gap", "padding", "align", "children"],
   row: ["type", "gap", "padding", "align", "justify", "wrap", "children"],
   text: ["type", "text", "style", "tone", "lines"],
-  card: ["type", "title", "children"],
+  card: ["type", "title", "tone", "padding", "children"],
+  grid: ["type", "columns", "gap", "children"],
+  field: ["type", "value", "label", "placeholder", "kind", "action", "submit"],
+  choice: ["type", "options", "value", "label", "action"],
+  icon: ["type", "name", "tone", "style", "label"],
+  image: ["type", "src", "alt", "aspect"],
   list: ["type", "children"],
-  item: ["type", "title", "subtitle", "trailing", "action"],
-  button: ["type", "label", "action", "style"],
+  item: ["type", "title", "icon", "subtitle", "trailing", "action"],
+  button: ["type", "label", "action", "icon", "style"],
   toggle: ["type", "label", "value", "action"],
   progress: ["type", "value", "label", "tone"],
   badge: ["type", "text", "tone"],
@@ -42,7 +48,9 @@ const enums = {
   Space: all<Space>()(["none", "xs", "sm", "md", "lg", "xl"]),
   Align: all<Align>()(["start", "center", "end", "stretch"]),
   Justify: all<Justify>()(["start", "center", "end", "between"]),
-  TextStyle: all<TextStyle>()(["title", "heading", "body", "caption", "mono"]),
+  TextStyle: all<TextStyle>()(["display", "title", "heading", "body", "caption", "mono"]),
+  FieldKind: all<FieldKind>()(["text", "number", "email", "search"]),
+  IconName: all<IconName>()(ICON_NAMES),
   Tone: all<Tone>()(["default", "muted", "accent", "success", "warning", "danger"]),
   ButtonStyle: all<ButtonStyle>()(["primary", "secondary", "plain"]),
 };
