@@ -1,0 +1,10 @@
+{
+  "expo": {
+    "name": "Ulana example",
+    "slug": "ulana-example",
+    "version": "0.1.0",
+    "orientation": "default",
+    "userInterfaceStyle": "light",
+    "platforms": ["ios", "android", "web"]
+  }
+}

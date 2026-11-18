@@ -154,9 +154,11 @@ function BlockView({ block }: { block: Block }): ReactNode {
       return (
         <View
           style={{ gap: theme.space.xs }}
-          accessibilityRole="progressbar"
-          accessibilityLabel={block.label}
-          accessibilityValue={{ min: 0, max: 100, now: Math.round(value * 100) }}
+          role="progressbar"
+          aria-label={block.label}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(value * 100)}
         >
           {block.label ? <Text style={textStyle(theme, "caption", "muted")}>{block.label}</Text> : null}
           <View style={{ height: 6, borderRadius: 3, backgroundColor: tone.soft, overflow: "hidden" }}>
@@ -275,6 +277,10 @@ function Toggle({ block }: { block: ToggleBlock }) {
         value={shown}
         disabled={!action}
         trackColor={{ true: theme.tones.accent.fg, false: theme.colors.border }}
+        thumbColor={theme.colors.surface}
+        ios_backgroundColor={theme.colors.border}
+        // react-native-web colours the knob of a switch that is on separately.
+        {...({ activeThumbColor: theme.colors.surface } as object)}
         onValueChange={(next) => {
           if (!action) return;
           setShown(next);
