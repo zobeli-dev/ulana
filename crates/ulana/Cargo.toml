@@ -5,7 +5,7 @@ readme = "README.md"
 # tests/schema.rs compares spec/frame.schema.json, which lives outside the crate.
 exclude = ["tests/schema.rs"]
 keywords = ["luau", "ui", "sandbox", "generative-ui", "server-driven-ui"]
-categories = ["gui", "sandbox"]
+categories = ["gui", "development-tools"]
 version.workspace = true
 edition.workspace = true
 license.workspace = true
